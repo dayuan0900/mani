@@ -3,124 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mani Mantra - Nebula Particles (Fixed)</title>
+    <title>Mani Nebula - Engineering Fix</title>
     <style>
-        body { 
-            margin: 0; overflow: hidden; 
-            background: #020205; /* 深空黑 */
-            font-family: 'Segoe UI', sans-serif; 
-            user-select: none; 
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', monospace; }
+        
+        /* 运行指示灯：绿色闪烁表示 JS 正常 */
+        #status-light {
+            position: absolute; top: 10px; right: 10px; width: 10px; height: 10px;
+            background: #0f0; border-radius: 50%; z-index: 200;
+            box-shadow: 0 0 10px #0f0; animation: blink 1s infinite;
         }
+        @keyframes blink { 50% { opacity: 0.3; } }
 
-        /* 界面 UI */
         #ui {
             position: absolute; top: 20px; left: 20px; width: 280px;
-            background: rgba(15, 20, 30, 0.85);
-            backdrop-filter: blur(12px);
-            padding: 20px; border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(10, 15, 20, 0.9);
+            border: 1px solid #333; padding: 15px; border-radius: 8px;
             color: #fff; z-index: 100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
 
-        h3 { 
-            margin: 0 0 10px 0; color: #00e5ff; 
-            text-align: center; letter-spacing: 3px; font-weight: 300;
-            text-shadow: 0 0 10px rgba(0,229,255,0.5);
-        }
-
-        /* 调试日志区域 - 关键修复 */
-        #console-log {
-            font-family: monospace; font-size: 10px; color: #0f0;
-            background: rgba(0,0,0,0.5); padding: 8px; margin-bottom: 15px;
-            border-radius: 4px; height: 50px; overflow-y: auto;
+        /* 调试日志终端 */
+        #console {
+            background: #000; color: #0f0; height: 100px; overflow-y: auto;
+            font-size: 10px; padding: 5px; margin-bottom: 10px;
             border: 1px solid #333; white-space: pre-wrap;
         }
 
-        .control-group { margin-bottom: 12px; }
-        label { display: flex; justify-content: space-between; font-size: 11px; color: #88a; margin-bottom: 4px; }
+        .control-group { margin-bottom: 10px; }
+        label { display: block; color: #888; font-size: 11px; margin-bottom: 3px; }
 
         .btn {
-            width: 100%; padding: 12px; border: none; border-radius: 4px;
-            background: linear-gradient(135deg, #00c6ff, #0072ff);
-            color: white; font-weight: bold; cursor: pointer;
-            margin-top: 5px; transition: 0.3s;
+            width: 100%; padding: 10px; border: none; border-radius: 4px;
+            font-weight: bold; cursor: pointer; margin-top: 5px;
         }
-        .btn:hover { box-shadow: 0 0 15px #00c6ff; transform: scale(1.02); }
-        
-        /* 测试按钮 */
-        .btn-test { background: #334; color: #aaa; padding: 8px; font-size: 12px; margin-top: 5px; }
-        .btn-test:hover { background: #445; color: #fff; }
+        #btn-generate { background: #00e5ff; color: #000; }
+        #btn-generate:active { background: #fff; }
+        #btn-test { background: #333; color: #ccc; font-size: 11px; }
 
-        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; }
-        input[type="color"] { width: 100%; border: none; height: 25px; padding: 0; background: none; }
-        input[type="file"] { font-size: 11px; color: #ccc; width: 100%; }
+        input[type="file"] { width: 100%; font-size: 11px; }
+        input[type="range"] { width: 100%; accent-color: #00e5ff; }
 
         canvas { display: block; }
     </style>
 </head>
 <body>
 
+<div id="status-light" title="JS Running"></div>
+
 <div id="ui">
-    <h3>NEBULA FLOW</h3>
-    
-    <!-- 日志显示区 -->
-    <div id="console-log">系统就绪...等待上传...</div>
-
-    <div class="control-group">
-        <label>1. 上传图片 (SVG/PNG)</label>
-        <input type="file" id="imageInput" accept="image/*,.svg">
-        <button class="btn" onclick="handleUpload()">⚡ 生成粒子</button>
-        <button class="btn btn-test" onclick="useTestText()">🛠️ 生成测试文字 (排查故障)</button>
-    </div>
-    
-    <div style="border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;"></div>
-
-    <div class="control-group">
-        <label>粒子大小 (Size)</label>
-        <input type="range" id="sizeRange" min="1" max="6" step="0.5" value="3">
-    </div>
+    <div id="console">系统初始化...</div>
     
     <div class="control-group">
-        <label>飘动幅度 (Flow)</label>
-        <input type="range" id="waveRange" min="0" max="50" value="20">
+        <label>1. 选择文件 (SVG/PNG)</label>
+        <input type="file" id="imageInput" accept=".svg, .png, .jpg, .jpeg">
+        <button id="btn-generate" class="btn">⚡ 生成粒子 (点击)</button>
+        <button id="btn-test" class="btn">🛠️ 使用内置测试图</button>
     </div>
 
+    <div style="border-top:1px solid #333; margin:10px 0;"></div>
+
     <div class="control-group">
-        <label>主题颜色 (Color)</label>
-        <input type="color" id="colorPicker" value="#00e5ff">
+        <label>粒子密度 (Density)</label>
+        <input type="range" id="densityRange" min="1" max="4" value="2" step="1">
+    </div>
+    <div class="control-group">
+        <label>飘动幅度 (Wave)</label>
+        <input type="range" id="waveRange" min="0" max="50" value="15">
     </div>
 </div>
 
 <canvas id="canvas"></canvas>
 
 <script>
-    // --- 日志工具 ---
-    const logEl = document.getElementById('console-log');
-    function log(msg, isError = false) {
+    // --- 0. 日志系统 ---
+    const logBox = document.getElementById('console');
+    function log(msg, type='info') {
         const line = document.createElement('div');
-        line.textContent = "> " + msg;
-        if(isError) line.style.color = "#ff5555";
-        logEl.prepend(line); // 新消息在最上面
+        const time = new Date().toLocaleTimeString().split(' ')[0];
+        line.textContent = `[${time}] ${msg}`;
+        if(type === 'error') line.style.color = '#ff5555';
+        if(type === 'warn') line.style.color = '#ffff55';
+        logBox.insertBefore(line, logBox.firstChild);
         console.log(msg);
     }
-    window.onerror = function(msg) { log("JS ERROR: " + msg, true); };
+    
+    // 全局错误捕获
+    window.onerror = function(msg, url, line) {
+        log(`JS崩溃: ${msg} (行${line})`, 'error');
+    };
 
+    // --- 1. 核心引擎 ---
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     
-    // 配置
+    let particles = [];
+    let nebula = [];
     let config = {
-        textParticles: [],
-        nebulaParticles: [],
         baseX: 0, baseY: 0, scale: 1,
         color: '#00e5ff',
-        pSize: 3,
-        waveAmp: 20,
-        waveSpeed: 0.002
+        waveAmp: 15,
+        waveSpeed: 0.002,
+        density: 2 // 采样间隔 (越小越密)
     };
 
-    // 1. 初始化
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -128,57 +113,39 @@
         config.baseY = canvas.height / 2;
         initNebula();
     }
-    window.addEventListener('resize', resize);
-
-    // 2. 星云背景
-    class Nebula {
-        constructor() { this.init(); }
-        init() {
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.radius = Math.random() * 200 + 50;
-            this.vx = (Math.random() - 0.5) * 0.1;
-            this.vy = (Math.random() - 0.5) * 0.1;
-            this.alpha = 0;
-            this.targetAlpha = Math.random() * 0.1 + 0.02;
-            this.hue = Math.random() > 0.5 ? 200 : 280;
-        }
-        update() {
-            this.x += this.vx; this.y += this.vy;
-            if (this.x < -300) this.x = canvas.width + 300;
-            if (this.x > canvas.width + 300) this.x = -300;
-            if (this.y < -300) this.y = canvas.height + 300;
-            if (this.y > canvas.height + 300) this.y = -300;
-            if (this.alpha < this.targetAlpha) this.alpha += 0.0005;
-        }
-        draw() {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            let g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
-            g.addColorStop(0, `hsla(${this.hue}, 80%, 60%, ${this.alpha})`);
-            g.addColorStop(1, `hsla(${this.hue}, 80%, 60%, 0)`);
-            ctx.fillStyle = g; ctx.fill();
-        }
-    }
+    
+    // --- 2. 星云背景 ---
     function initNebula() {
-        config.nebulaParticles = [];
-        for (let i = 0; i < 40; i++) config.nebulaParticles.push(new Nebula());
+        nebula = [];
+        for(let i=0; i<50; i++) {
+            nebula.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 150 + 50,
+                vx: (Math.random()-0.5)*0.1,
+                vy: (Math.random()-0.5)*0.1,
+                hue: Math.random()>0.5 ? 200 : 260,
+                alpha: Math.random() * 0.1
+            });
+        }
     }
 
-    // 3. 粒子类
+    // --- 3. 粒子系统 ---
     class Particle {
         constructor(x, y) {
             this.ox = x; this.oy = y;
             this.x = Math.random() * canvas.width;
             this.y = Math.random() * canvas.height;
             this.vx = 0; this.vy = 0;
-            this.waveOffset = this.ox * 0.01 + this.oy * 0.005; 
+            this.offset = x * 0.01 + y * 0.01;
         }
         update(time) {
-            const wx = Math.sin(time * config.waveSpeed + this.waveOffset) * (config.waveAmp * 0.3);
-            const wy = Math.cos(time * config.waveSpeed + this.waveOffset) * config.waveAmp;
+            const wx = Math.sin(time * config.waveSpeed + this.offset) * (config.waveAmp * 0.3);
+            const wy = Math.cos(time * config.waveSpeed * 1.1 + this.offset) * config.waveAmp;
+            
             const tx = config.baseX + (this.ox * config.scale) + wx;
             const ty = config.baseY + (this.oy * config.scale) + wy;
+            
             this.vx += (tx - this.x) * 0.08;
             this.vy += (ty - this.y) * 0.08;
             this.x += this.vx; this.y += this.vy;
@@ -186,27 +153,59 @@
         }
         draw() {
             ctx.beginPath();
-            ctx.arc(this.x, this.y, config.pSize, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, 2.5, 0, Math.PI*2);
             ctx.fillStyle = config.color;
             ctx.fill();
         }
     }
 
-    // 4. 图像处理 (核心修复部分)
-    function handleUpload() {
-        const input = document.getElementById('imageInput');
-        if (!input.files[0]) { log("❌ 请先选择文件", true); return; }
-        
-        log(`读取文件: ${input.files[0].name}`);
-        const reader = new FileReader();
-        reader.onload = e => {
-            const img = new Image();
-            img.onload = () => processImage(img);
-            img.onerror = () => log("❌ 图片对象加载失败", true);
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(input.files[0]);
+    // --- 4. 图像处理 (SVG 修复黑科技) ---
+    
+    // 专门处理 SVG 的函数：强行注入尺寸
+    function patchSVG(svgText) {
+        log("正在修补 SVG 代码...");
+        // 如果没有 width/height，强行注入
+        if (!svgText.includes('width=') || !svgText.includes('height=')) {
+            // 找到 <svg 标签，插入尺寸
+            return svgText.replace('<svg', '<svg width="1000" height="1000" ');
+        }
+        return svgText;
     }
 
-    function useTestText() {
-    
+    function processSource(imgSrc) {
+        log("开始加载图像...");
+        const img = new Image();
+        img.crossOrigin = "Anonymous"; // 防止跨域报错
+        
+        img.onload = () => {
+            log(`图像加载成功: ${img.width}x${img.height}`);
+            
+            // 强制渲染尺寸
+            const w = 800;
+            const h = 600;
+            const off = document.createElement('canvas');
+            off.width = w; off.height = h;
+            const offCtx = off.getContext('2d');
+            
+            // 铺灰底 (兼容所有透明度)
+            offCtx.fillStyle = '#808080';
+            offCtx.fillRect(0,0,w,h);
+            
+            // 居中绘制
+            const aspect = img.width / img.height || 1;
+            let dw = w, dh = w/aspect;
+            if(dh > h) { dh = h; dw = h*aspect; }
+            offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
+            
+            // 采样
+            const data = offCtx.getImageData(0,0,w,h).data;
+            particles = [];
+            const gap = parseInt(document.getElementById('densityRange').value) || 2;
+            
+            log(`开始采样 (间隔:${gap})...`);
+            for(let y=0; y<h; y+=gap) {
+                for(let x=0; x<w; x+=gap) {
+                    const i = (y*w+x)*4;
+                    const lum = (data[i]+data[i+1]+data[i+2])/3;
+                    // 边缘检测
+                 
