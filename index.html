@@ -3,50 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mani Mantra - Nebula Particles</title>
+    <title>Mani Mantra - Nebula Particles (Fixed)</title>
     <style>
         body { 
             margin: 0; overflow: hidden; 
             background: #020205; /* 深空黑 */
             font-family: 'Segoe UI', sans-serif; 
+            user-select: none; 
         }
 
         /* 界面 UI */
         #ui {
-            position: absolute; top: 20px; left: 20px; width: 260px;
-            background: rgba(15, 20, 30, 0.7); /* 高透磨砂 */
-            backdrop-filter: blur(10px);
+            position: absolute; top: 20px; left: 20px; width: 280px;
+            background: rgba(15, 20, 30, 0.85);
+            backdrop-filter: blur(12px);
             padding: 20px; border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.1);
             color: #fff; z-index: 100;
-            transition: opacity 0.3s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
-        /* 鼠标离开时半透明，避免遮挡 */
-        #ui:hover { opacity: 1; }
-        #ui { opacity: 0.8; }
 
         h3 { 
-            margin: 0 0 15px 0; color: #00e5ff; 
+            margin: 0 0 10px 0; color: #00e5ff; 
             text-align: center; letter-spacing: 3px; font-weight: 300;
             text-shadow: 0 0 10px rgba(0,229,255,0.5);
+        }
+
+        /* 调试日志区域 - 关键修复 */
+        #console-log {
+            font-family: monospace; font-size: 10px; color: #0f0;
+            background: rgba(0,0,0,0.5); padding: 8px; margin-bottom: 15px;
+            border-radius: 4px; height: 50px; overflow-y: auto;
+            border: 1px solid #333; white-space: pre-wrap;
         }
 
         .control-group { margin-bottom: 12px; }
         label { display: flex; justify-content: space-between; font-size: 11px; color: #88a; margin-bottom: 4px; }
 
         .btn {
-            width: 100%; padding: 10px; border: none; border-radius: 4px;
+            width: 100%; padding: 12px; border: none; border-radius: 4px;
             background: linear-gradient(135deg, #00c6ff, #0072ff);
             color: white; font-weight: bold; cursor: pointer;
             margin-top: 5px; transition: 0.3s;
         }
         .btn:hover { box-shadow: 0 0 15px #00c6ff; transform: scale(1.02); }
+        
+        /* 测试按钮 */
+        .btn-test { background: #334; color: #aaa; padding: 8px; font-size: 12px; margin-top: 5px; }
+        .btn-test:hover { background: #445; color: #fff; }
 
         input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; }
         input[type="color"] { width: 100%; border: none; height: 25px; padding: 0; background: none; }
         input[type="file"] { font-size: 11px; color: #ccc; width: 100%; }
 
-        /* 画布 */
         canvas { display: block; }
     </style>
 </head>
@@ -55,27 +64,26 @@
 <div id="ui">
     <h3>NEBULA FLOW</h3>
     
+    <!-- 日志显示区 -->
+    <div id="console-log">系统就绪...等待上传...</div>
+
     <div class="control-group">
         <label>1. 上传图片 (SVG/PNG)</label>
         <input type="file" id="imageInput" accept="image/*,.svg">
         <button class="btn" onclick="handleUpload()">⚡ 生成粒子</button>
+        <button class="btn btn-test" onclick="useTestText()">🛠️ 生成测试文字 (排查故障)</button>
     </div>
     
     <div style="border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;"></div>
 
     <div class="control-group">
-        <label>粒子大小 (Particle Size)</label>
-        <input type="range" id="sizeRange" min="1" max="5" step="0.5" value="2.5">
+        <label>粒子大小 (Size)</label>
+        <input type="range" id="sizeRange" min="1" max="6" step="0.5" value="3">
     </div>
     
     <div class="control-group">
         <label>飘动幅度 (Flow)</label>
         <input type="range" id="waveRange" min="0" max="50" value="20">
-    </div>
-
-    <div class="control-group">
-        <label>背景星云浓度 (Nebula)</label>
-        <input type="range" id="nebulaRange" min="0" max="100" value="50">
     </div>
 
     <div class="control-group">
@@ -87,93 +95,118 @@
 <canvas id="canvas"></canvas>
 
 <script>
+    // --- 日志工具 ---
+    const logEl = document.getElementById('console-log');
+    function log(msg, isError = false) {
+        const line = document.createElement('div');
+        line.textContent = "> " + msg;
+        if(isError) line.style.color = "#ff5555";
+        logEl.prepend(line); // 新消息在最上面
+        console.log(msg);
+    }
+    window.onerror = function(msg) { log("JS ERROR: " + msg, true); };
+
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     
-    // 配置参数
+    // 配置
     let config = {
         textParticles: [],
         nebulaParticles: [],
         baseX: 0, baseY: 0, scale: 1,
         color: '#00e5ff',
-        pSize: 2.5,
+        pSize: 3,
         waveAmp: 20,
-        waveSpeed: 0.002,
-        nebulaCount: 50
+        waveSpeed: 0.002
     };
 
-    // 1. 初始化画布
+    // 1. 初始化
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         config.baseX = canvas.width / 2;
         config.baseY = canvas.height / 2;
-        initNebula(); // 重置背景
+        initNebula();
     }
     window.addEventListener('resize', resize);
 
-    // 2. 星云背景系统 (你想要的效果)
+    // 2. 星云背景
     class Nebula {
-        constructor() {
-            this.init();
-        }
+        constructor() { this.init(); }
         init() {
             this.x = Math.random() * canvas.width;
             this.y = Math.random() * canvas.height;
-            this.radius = Math.random() * 150 + 50; // 巨大的光团
-            this.vx = (Math.random() - 0.5) * 0.2; // 极慢的漂浮
-            this.vy = (Math.random() - 0.5) * 0.2;
+            this.radius = Math.random() * 200 + 50;
+            this.vx = (Math.random() - 0.5) * 0.1;
+            this.vy = (Math.random() - 0.5) * 0.1;
             this.alpha = 0;
-            this.targetAlpha = Math.random() * 0.15 + 0.02; // 透明度目标
-            this.colorHue = Math.random() > 0.5 ? 200 : 280; // 蓝色或紫色
+            this.targetAlpha = Math.random() * 0.1 + 0.02;
+            this.hue = Math.random() > 0.5 ? 200 : 280;
         }
         update() {
-            this.x += this.vx; 
-            this.y += this.vy;
-            
-            // 边界循环
-            if (this.x < -200) this.x = canvas.width + 200;
-            if (this.x > canvas.width + 200) this.x = -200;
-            if (this.y < -200) this.y = canvas.height + 200;
-            if (this.y > canvas.height + 200) this.y = -200;
-
-            // 淡入效果
-            if (this.alpha < this.targetAlpha) this.alpha += 0.001;
+            this.x += this.vx; this.y += this.vy;
+            if (this.x < -300) this.x = canvas.width + 300;
+            if (this.x > canvas.width + 300) this.x = -300;
+            if (this.y < -300) this.y = canvas.height + 300;
+            if (this.y > canvas.height + 300) this.y = -300;
+            if (this.alpha < this.targetAlpha) this.alpha += 0.0005;
         }
         draw() {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            // 创建径向渐变，模拟云雾
             let g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
-            g.addColorStop(0, `hsla(${this.colorHue}, 80%, 60%, ${this.alpha})`);
-            g.addColorStop(1, `hsla(${this.colorHue}, 80%, 60%, 0)`);
-            ctx.fillStyle = g;
+            g.addColorStop(0, `hsla(${this.hue}, 80%, 60%, ${this.alpha})`);
+            g.addColorStop(1, `hsla(${this.hue}, 80%, 60%, 0)`);
+            ctx.fillStyle = g; ctx.fill();
+        }
+    }
+    function initNebula() {
+        config.nebulaParticles = [];
+        for (let i = 0; i < 40; i++) config.nebulaParticles.push(new Nebula());
+    }
+
+    // 3. 粒子类
+    class Particle {
+        constructor(x, y) {
+            this.ox = x; this.oy = y;
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.vx = 0; this.vy = 0;
+            this.waveOffset = this.ox * 0.01 + this.oy * 0.005; 
+        }
+        update(time) {
+            const wx = Math.sin(time * config.waveSpeed + this.waveOffset) * (config.waveAmp * 0.3);
+            const wy = Math.cos(time * config.waveSpeed + this.waveOffset) * config.waveAmp;
+            const tx = config.baseX + (this.ox * config.scale) + wx;
+            const ty = config.baseY + (this.oy * config.scale) + wy;
+            this.vx += (tx - this.x) * 0.08;
+            this.vy += (ty - this.y) * 0.08;
+            this.x += this.vx; this.y += this.vy;
+            this.vx *= 0.85; this.vy *= 0.85;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, config.pSize, 0, Math.PI * 2);
+            ctx.fillStyle = config.color;
             ctx.fill();
         }
     }
 
-    function initNebula() {
-        config.nebulaParticles = [];
-        for (let i = 0; i < 60; i++) {
-            config.nebulaParticles.push(new Nebula());
-        }
+    // 4. 图像处理 (核心修复部分)
+    function handleUpload() {
+        const input = document.getElementById('imageInput');
+        if (!input.files[0]) { log("❌ 请先选择文件", true); return; }
+        
+        log(`读取文件: ${input.files[0].name}`);
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = new Image();
+            img.onload = () => processImage(img);
+            img.onerror = () => log("❌ 图片对象加载失败", true);
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
     }
 
-    // 3. 核心粒子类 (文字)
-    class Particle {
-        constructor(x, y) {
-            this.ox = x; // 原始坐标
-            this.oy = y;
-            this.x = Math.random() * canvas.width;
-            this.y = Math.random() * canvas.height;
-            this.vx = 0; this.vy = 0;
-            // 随机相位，让每个粒子的飘动节奏不一样
-            this.waveOffset = this.ox * 0.015 + this.oy * 0.005; 
-        }
-        update(time) {
-            // 流体波动算法
-            const wx = Math.sin(time * config.waveSpeed + this.waveOffset) * (config.waveAmp * 0.4);
-            const wy = Math.cos(time * config.waveSpeed * 1.2 + this.waveOffset) * config.waveAmp;
-
-            const tx = config.baseX + (this.ox * config.scale) + wx;
-        
+    function useTestText() {
+    
