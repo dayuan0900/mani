@@ -4,46 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Hi-Res Stardust</title>
+    <title>Mani - Liquid Light</title>
     <style>
         body { 
             margin: 0; overflow: hidden; background: #000; 
             font-family: 'Segoe UI', sans-serif; user-select: none; 
         }
 
-        /* 极简半透明 UI */
         #ui {
             position: absolute; top: 20px; left: 20px; width: 260px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 8px;
+            background: rgba(10, 15, 20, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
             padding: 20px; color: #fff; z-index: 100;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
-        
-        /* 鼠标移开时变淡，避免干扰视线 */
-        #ui:hover { opacity: 1; }
-        #ui { opacity: 0.5; transition: opacity 0.3s; }
 
         h3 { 
             margin: 0 0 15px 0; color: #fff; font-size: 14px; 
             letter-spacing: 3px; text-align: center; text-transform: uppercase;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
+            text-shadow: 0 0 10px rgba(0,200,255,0.5);
         }
 
         .btn {
             width: 100%; padding: 10px; border: none; border-radius: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff; font-size: 12px; cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.2);
-            margin-top: 8px; transition: 0.2s;
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: #fff; font-weight: bold; cursor: pointer;
+            margin-top: 8px; transition: 0.2s; font-size: 12px;
         }
-        .btn:hover { background: rgba(0, 229, 255, 0.3); border-color: #00e5ff; }
+        .btn:hover { box-shadow: 0 0 15px rgba(0,198,255,0.4); }
 
-        label { display: block; font-size: 10px; color: #888; margin-top: 10px; margin-bottom: 4px; letter-spacing: 1px; }
-        input[type="file"] { width: 100%; font-size: 10px; color: #aaa; }
-        input[type="range"] { width: 100%; cursor: pointer; accent-color: #fff; height: 2px; }
-        input[type="color"] { width: 100%; border: none; height: 20px; background: none; padding: 0; }
+        label { display: block; font-size: 10px; color: #88a; margin-top: 12px; margin-bottom: 4px; }
+        input[type="file"] { width: 100%; font-size: 10px; color: #ccc; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; }
+        input[type="color"] { width: 100%; border: none; height: 25px; padding: 0; background: none; }
 
         canvas { display: block; }
     </style>
@@ -51,40 +46,43 @@
 <body>
 
 <div id="ui">
-    <h3>High-Fidelity</h3>
+    <h3>LIQUID LIGHT</h3>
     
     <input type="file" id="imageInput" accept="image/*,.svg">
-    <button class="btn" onclick="runGen()">ACTIVATE / 激活高清粒子</button>
-    <button class="btn" onclick="runTest()" style="border-style:dashed; color:#888;">TEST / 测试图</button>
-
+    <button class="btn" onclick="runGen()">ACTIVATE / 激活</button>
+    
     <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1);"></div>
 
-    <label>PARTICLE SIZE / 粒子粗细 (调小更清晰)</label>
-    <input type="range" id="sizeRange" min="0.5" max="3" step="0.1" value="0.8" oninput="config.pSize=parseFloat(this.value)">
+    <label>DENSITY / 连贯密度 (关键)</label>
+    <input type="range" id="densityRange" min="1" max="3" step="1" value="3" oninput="updateDensity(this.value)">
+    <div style="font-size:9px; color:#555; text-align:right;">(拉到最右最连贯)</div>
 
-    <label>WAVE FLOW / 飘动幅度</label>
-    <input type="range" id="waveRange" min="0" max="30" value="5" oninput="config.waveAmp=parseFloat(this.value)">
+    <label>PARTICLE SIZE / 粒子大小</label>
+    <input type="range" id="sizeRange" min="1" max="4" step="0.1" value="1.8" oninput="config.pSize=parseFloat(this.value)">
 
-    <label>COLOR / 颜色</label>
+    <label>COLOR / 光色</label>
     <input type="color" id="colorPicker" value="#00e5ff" oninput="config.color=this.value">
 </div>
 
 <canvas id="canvas"></canvas>
 
 <script data-cfasync="false">
-    // --- 0. 启动 ---
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     
     let particles = [];
-    let bgStars = [];
-    
+    let bgParticles = [];
+    let currentImgData = null; // 缓存图片数据以便重新生成
+    let currentImgWidth = 0;
+    let currentImgHeight = 0;
+
     let config = {
         baseX: 0, baseY: 0, scale: 1,
         color: '#00e5ff',
-        pSize: 0.8,      // 【关键】默认极细，像沙子一样
-        waveAmp: 5,      // 【关键】默认飘动幅度小，防止变形
-        waveSpeed: 0.002
+        pSize: 1.8,      // 默认大小适中，配合高密度
+        waveAmp: 5,      // 飘动幅度
+        waveSpeed: 0.002,
+        densityLevel: 1  // 1=逐像素(最密), 3=稀疏
     };
 
     function resize() {
@@ -95,26 +93,26 @@
         initBg();
     }
     window.addEventListener('resize', resize);
-    
-    // --- 1. 背景星海 (深邃感) ---
+
+    // --- 1. 背景星尘 (深邃氛围) ---
     function initBg() {
-        bgStars = [];
-        for(let i=0; i<400; i++) {
-            bgStars.push({
+        bgParticles = [];
+        for(let i=0; i<200; i++) {
+            bgParticles.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 1.5,
-                alpha: Math.random(),
-                speed: Math.random() * 0.2
+                size: Math.random() * 2,
+                alpha: Math.random() * 0.5 + 0.1,
+                vx: (Math.random()-0.5) * 0.2,
+                vy: (Math.random()-0.5) * 0.2
             });
         }
     }
 
-    // --- 2. 核心：高保真图像处理 ---
+    // --- 2. 图像引擎 (连贯性核心) ---
     function patchSVG(svg) {
-        // 强行把 SVG 内部尺寸撑大，确保不模糊
         if (!svg.includes('width=') || !svg.includes('height=')) {
-            return svg.replace('<svg', '<svg width="2000" height="2000" ');
+            return svg.replace('<svg', '<svg width="1000" height="1000" ');
         }
         return svg;
     }
@@ -123,65 +121,72 @@
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = () => {
-            // 【关键升级】使用 2000px 宽度的画布进行采样，相当于 2K/4K 分辨率
-            const w = 2000; 
-            const h = 1500;
-            
+            // 使用 1200px 宽度的画布，保证细节足够
+            const w = 1200; 
+            const h = 900;
             const off = document.createElement('canvas');
             off.width = w; off.height = h;
             const offCtx = off.getContext('2d');
             
-            // 铺灰底
-            offCtx.fillStyle = '#808080';
+            offCtx.fillStyle = '#000000'; // 黑底，方便算亮度
             offCtx.fillRect(0,0,w,h);
             
-            // 居中绘制
             const aspect = img.width/img.height||1;
             let dw=w, dh=w/aspect;
             if(dh>h){ dh=h; dw=h*aspect; }
             offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
             
-            // 采样
-            const data = offCtx.getImageData(0,0,w,h).data;
-            particles = [];
+            // 缓存数据
+            currentImgData = offCtx.getImageData(0,0,w,h).data;
+            currentImgWidth = w;
+            currentImgHeight = h;
             
-            // 【关键升级】采样步长 (Gap)
-            // 画布大了，gap 可以稍微大一点 (4)，这样粒子总数可控，但位置极其精准
-            const gap = 4; 
-            
-            for(let y=0; y<h; y+=gap) {
-                for(let x=0; x<w; x+=gap) {
-                    const i = (y*w+x)*4;
-                    const lum = (data[i]+data[i+1]+data[i+2])/3;
-                    
-                    // 边缘检测 + 内部填充检测
-                    if(x+gap < w) {
-                        const lum2 = (data[i+4*gap]+data[i+4*gap+1]+data[i+4*gap+2])/3;
-                        // 阈值调低，捕捉更多细节
-                        if(Math.abs(lum-lum2) > 15) {
-                            particles.push({
-                                x: Math.random()*canvas.width,
-                                y: Math.random()*canvas.height,
-                                ox: (x-w/2), 
-                                oy: (y-h/2),
-                                vx: 0, vy: 0,
-                                // 赋予一点随机大小，让它像星星一样自然
-                                size: Math.random() * 0.5 + 0.5, 
-                                offset: Math.random()*100
-                            });
-                        }
-                    }
-                }
-            }
-            
-            if(particles.length > 0) {
-                // 根据屏幕大小计算缩放，确保文字完整显示
-                config.scale = (window.innerWidth * 0.7) / w; 
-            } else {
-                alert("未检测到内容，请检查图片！");
-            }
+            generateParticles(); // 生成粒子
         };
         img.src = src;
+    }
+
+    function generateParticles() {
+        if (!currentImgData) return;
+        
+        particles = [];
+        const w = currentImgWidth;
+        const h = currentImgHeight;
+        
+        // **关键逻辑：密度反转**
+        // 滑块 3 (最右) -> gap = 1 (最密)
+        // 滑块 1 (最左) -> gap = 3 (较疏)
+        const userDensity = parseInt(document.getElementById('densityRange').value);
+        const gap = 4 - userDensity; 
+
+        for(let y=0; y<h; y+=gap) {
+            for(let x=0; x<w; x+=gap) {
+                const i = (y*w+x)*4;
+                // 检测亮度 (R+G+B)/3
+                const lum = (currentImgData[i] + currentImgData[i+1] + currentImgData[i+2]) / 3;
+                
+                // 只有亮度足够的地方才生成粒子
+                if (lum > 50) {
+                    // **关键优化：边缘补点**
+                    // 如果这是边缘，必定生成；如果是内部，也生成。
+                    // 并且加入 random 偏移，填补 grid 缝隙
+                    particles.push({
+                        x: Math.random()*canvas.width, // 初始位置随机
+                        y: Math.random()*canvas.height,
+                        ox: (x - w/2) + (Math.random()-0.5)*1.5, // 目标位置加一点点抖动，消除网格感
+                        oy: (y - h/2) + (Math.random()-0.5)*1.5,
+                        vx: 0, vy: 0,
+                        offset: Math.random()*100 // 飘动相位
+                    });
+                }
+            }
+        }
+        
+        if(particles.length > 0) {
+            config.scale = (window.innerWidth * 0.75) / w; 
+        } else {
+            alert("未检测到内容，请上传白线黑底或透明图！");
+        }
     }
 
     // --- 3. 交互 ---
@@ -204,46 +209,39 @@
         }
     };
 
-    window.runTest = function() {
-        const t = document.createElement('canvas'); t.width=1000; t.height=500;
-        const c = t.getContext('2d'); c.fillStyle="#fff"; c.fillRect(0,0,1000,500);
-        c.fillStyle="#000"; c.font="bold 150px Arial"; c.fillText("ZEN MODE", 150, 280);
-        processSource(t.toDataURL());
-    };
+    window.updateDensity = function(val) {
+        generateParticles(); // 拖动密度滑块时实时重新生成
+    }
 
     // --- 4. 渲染循环 ---
     function animate() {
-        // 1. 拖尾清除 (制造流动感)
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+        // 拖尾清除，保留光感
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const time = Date.now();
 
-        // 2. 绘制背景星尘
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        bgStars.forEach(s => {
-            s.y -= s.speed;
-            if(s.y < 0) s.y = canvas.height;
+        // 绘制背景星尘
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        bgParticles.forEach(p => {
+            p.x += p.vx; p.y += p.vy;
+            if(p.x<0) p.x=canvas.width; if(p.x>canvas.width) p.x=0;
+            if(p.y<0) p.y=canvas.height; if(p.y>canvas.height) p.y=0;
             ctx.beginPath();
-            ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
             ctx.fill();
         });
 
-        // 3. 绘制文字粒子 (核心)
-        // 使用 lighter 模式，但控制光晕，让中心锐利
-        ctx.globalCompositeOperation = 'lighter'; 
+        // 绘制文字 (高亮叠加模式)
+        ctx.globalCompositeOperation = 'lighter';
         ctx.fillStyle = config.color;
         
-        // 只有当用户真的把滑块拉大时才开启模糊光晕，默认保持锐利
-        if (config.pSize > 2) {
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = config.color;
-        } else {
-            ctx.shadowBlur = 0;
-        }
+        // 开启光晕，起到“胶水”的作用，把粒子粘在一起
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = config.color;
 
         particles.forEach(p => {
-            // 飘动算法 (幅度由 waveAmp 控制)
+            // 波浪飘动
             const wx = Math.sin(time * config.waveSpeed + p.offset) * config.waveAmp;
             const wy = Math.cos(time * config.waveSpeed + p.offset) * config.waveAmp;
             
@@ -253,11 +251,10 @@
             p.vx += (tx - p.x) * 0.1;
             p.vy += (ty - p.y) * 0.1;
             p.x += p.vx; p.y += p.vy;
-            p.vx *= 0.8; p.vy *= 0.8;
+            p.vx *= 0.85; p.vy *= 0.85;
 
             ctx.beginPath();
-            // 实际绘制大小 = 基础大小 * 随机微调
-            ctx.arc(p.x, p.y, config.pSize * p.size, 0, Math.PI*2);
+            ctx.arc(p.x, p.y, config.pSize, 0, Math.PI*2);
             ctx.fill();
         });
         
@@ -266,7 +263,6 @@
         requestAnimationFrame(animate);
     }
 
-    // 启动
     resize();
     initBg();
     animate();
