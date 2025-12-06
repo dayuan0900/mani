@@ -4,41 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Liquid Light</title>
+    <title>Mani - Universal Liquid</title>
     <style>
-        body { 
-            margin: 0; overflow: hidden; background: #000; 
-            font-family: 'Segoe UI', sans-serif; user-select: none; 
-        }
-
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        
         #ui {
             position: absolute; top: 20px; left: 20px; width: 260px;
-            background: rgba(10, 15, 20, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
+            background: rgba(15, 20, 25, 0.9);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
             padding: 20px; color: #fff; z-index: 100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
 
-        h3 { 
-            margin: 0 0 15px 0; color: #fff; font-size: 14px; 
-            letter-spacing: 3px; text-align: center; text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(0,200,255,0.5);
-        }
+        h3 { margin: 0 0 15px 0; color: #00e5ff; letter-spacing: 2px; text-align: center; }
 
         .btn {
-            width: 100%; padding: 10px; border: none; border-radius: 4px;
+            width: 100%; padding: 12px; border: none; border-radius: 6px;
             background: linear-gradient(135deg, #00c6ff, #0072ff);
             color: #fff; font-weight: bold; cursor: pointer;
-            margin-top: 8px; transition: 0.2s; font-size: 12px;
+            margin-top: 10px; transition: 0.2s;
         }
-        .btn:hover { box-shadow: 0 0 15px rgba(0,198,255,0.4); }
+        .btn:hover { box-shadow: 0 0 20px rgba(0, 198, 255, 0.5); }
 
-        label { display: block; font-size: 10px; color: #88a; margin-top: 12px; margin-bottom: 4px; }
-        input[type="file"] { width: 100%; font-size: 10px; color: #ccc; }
+        label { display: block; font-size: 11px; color: #88a; margin-top: 12px; margin-bottom: 4px; }
+        input[type="file"] { width: 100%; font-size: 11px; color: #ccc; }
         input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; }
-        input[type="color"] { width: 100%; border: none; height: 25px; padding: 0; background: none; }
+        input[type="color"] { width: 100%; height: 25px; border: none; background: none; }
 
         canvas { display: block; }
     </style>
@@ -46,21 +37,20 @@
 <body>
 
 <div id="ui">
-    <h3>LIQUID LIGHT</h3>
+    <h3>LIQUID NEON</h3>
     
     <input type="file" id="imageInput" accept="image/*,.svg">
     <button class="btn" onclick="runGen()">ACTIVATE / 激活</button>
     
-    <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1);"></div>
+    <div style="margin-top:15px; border-top:1px solid #333;"></div>
 
-    <label>DENSITY / 连贯密度 (关键)</label>
+    <label>DENSITY / 连贯密度 (最右最连贯)</label>
     <input type="range" id="densityRange" min="1" max="3" step="1" value="3" oninput="updateDensity(this.value)">
-    <div style="font-size:9px; color:#555; text-align:right;">(拉到最右最连贯)</div>
 
-    <label>PARTICLE SIZE / 粒子大小</label>
-    <input type="range" id="sizeRange" min="1" max="4" step="0.1" value="1.8" oninput="config.pSize=parseFloat(this.value)">
+    <label>PARTICLE SIZE / 粒子粗细</label>
+    <input type="range" id="sizeRange" min="1" max="4" step="0.1" value="1.5" oninput="config.pSize=parseFloat(this.value)">
 
-    <label>COLOR / 光色</label>
+    <label>COLOR / 颜色</label>
     <input type="color" id="colorPicker" value="#00e5ff" oninput="config.color=this.value">
 </div>
 
@@ -72,17 +62,16 @@
     
     let particles = [];
     let bgParticles = [];
-    let currentImgData = null; // 缓存图片数据以便重新生成
-    let currentImgWidth = 0;
+    let currentImgData = null; 
+    let currentImgWidth = 0; 
     let currentImgHeight = 0;
 
     let config = {
         baseX: 0, baseY: 0, scale: 1,
         color: '#00e5ff',
-        pSize: 1.8,      // 默认大小适中，配合高密度
-        waveAmp: 5,      // 飘动幅度
-        waveSpeed: 0.002,
-        densityLevel: 1  // 1=逐像素(最密), 3=稀疏
+        pSize: 1.5,
+        waveAmp: 5,
+        waveSpeed: 0.002
     };
 
     function resize() {
@@ -94,10 +83,10 @@
     }
     window.addEventListener('resize', resize);
 
-    // --- 1. 背景星尘 (深邃氛围) ---
+    // --- 1. 背景星尘 ---
     function initBg() {
         bgParticles = [];
-        for(let i=0; i<200; i++) {
+        for(let i=0; i<250; i++) {
             bgParticles.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
@@ -109,7 +98,9 @@
         }
     }
 
-    // --- 2. 图像引擎 (连贯性核心) ---
+    // --- 2. 图像处理 (灰色扫描法) ---
+    
+    // 强制给SVG加尺寸，防止0x0错误
     function patchSVG(svg) {
         if (!svg.includes('width=') || !svg.includes('height=')) {
             return svg.replace('<svg', '<svg width="1000" height="1000" ');
@@ -121,28 +112,29 @@
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = () => {
-            // 使用 1200px 宽度的画布，保证细节足够
-            const w = 1200; 
-            const h = 900;
+            const w = 1000; const h = 800; // 强制大尺寸采样
             const off = document.createElement('canvas');
             off.width = w; off.height = h;
             const offCtx = off.getContext('2d');
             
-            offCtx.fillStyle = '#000000'; // 黑底，方便算亮度
+            // 【关键修改】背景涂成中性灰 #808080 (RGB: 128,128,128)
+            // 这样无论是白字还是黑字，都有对比度
+            offCtx.fillStyle = '#808080'; 
             offCtx.fillRect(0,0,w,h);
             
             const aspect = img.width/img.height||1;
             let dw=w, dh=w/aspect;
             if(dh>h){ dh=h; dw=h*aspect; }
+            // 居中绘制
             offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
             
-            // 缓存数据
             currentImgData = offCtx.getImageData(0,0,w,h).data;
             currentImgWidth = w;
             currentImgHeight = h;
             
-            generateParticles(); // 生成粒子
+            generateParticles();
         };
+        img.onerror = () => alert("图片加载失败，请检查文件格式");
         img.src = src;
     }
 
@@ -152,31 +144,27 @@
         particles = [];
         const w = currentImgWidth;
         const h = currentImgHeight;
-        
-        // **关键逻辑：密度反转**
-        // 滑块 3 (最右) -> gap = 1 (最密)
-        // 滑块 1 (最左) -> gap = 3 (较疏)
-        const userDensity = parseInt(document.getElementById('densityRange').value);
-        const gap = 4 - userDensity; 
+        const gap = 4 - parseInt(document.getElementById('densityRange').value); 
 
         for(let y=0; y<h; y+=gap) {
             for(let x=0; x<w; x+=gap) {
                 const i = (y*w+x)*4;
-                // 检测亮度 (R+G+B)/3
-                const lum = (currentImgData[i] + currentImgData[i+1] + currentImgData[i+2]) / 3;
+                const r = currentImgData[i];
+                const g = currentImgData[i+1];
+                const b = currentImgData[i+2];
                 
-                // 只有亮度足够的地方才生成粒子
-                if (lum > 50) {
-                    // **关键优化：边缘补点**
-                    // 如果这是边缘，必定生成；如果是内部，也生成。
-                    // 并且加入 random 偏移，填补 grid 缝隙
+                const lum = (r + g + b) / 3;
+                
+                // 【核心逻辑】只要亮度不是 128 (灰色背景)，就说明这里有内容
+                // 阈值设为 20，容错率高
+                if (Math.abs(lum - 128) > 20) {
                     particles.push({
-                        x: Math.random()*canvas.width, // 初始位置随机
+                        x: Math.random()*canvas.width,
                         y: Math.random()*canvas.height,
-                        ox: (x - w/2) + (Math.random()-0.5)*1.5, // 目标位置加一点点抖动，消除网格感
-                        oy: (y - h/2) + (Math.random()-0.5)*1.5,
+                        ox: (x - w/2) + (Math.random()-0.5), // 随机填缝
+                        oy: (y - h/2) + (Math.random()-0.5),
                         vx: 0, vy: 0,
-                        offset: Math.random()*100 // 飘动相位
+                        offset: Math.random()*100
                     });
                 }
             }
@@ -185,7 +173,7 @@
         if(particles.length > 0) {
             config.scale = (window.innerWidth * 0.75) / w; 
         } else {
-            alert("未检测到内容，请上传白线黑底或透明图！");
+            alert("未检测到轮廓！请尝试换一张图片，或把SVG转成PNG上传。");
         }
     }
 
@@ -209,19 +197,16 @@
         }
     };
 
-    window.updateDensity = function(val) {
-        generateParticles(); // 拖动密度滑块时实时重新生成
-    }
+    window.updateDensity = function() { generateParticles(); };
 
     // --- 4. 渲染循环 ---
     function animate() {
-        // 拖尾清除，保留光感
         ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const time = Date.now();
 
-        // 绘制背景星尘
+        // 绘制星尘
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
         bgParticles.forEach(p => {
             p.x += p.vx; p.y += p.vy;
@@ -232,16 +217,15 @@
             ctx.fill();
         });
 
-        // 绘制文字 (高亮叠加模式)
+        // 绘制文字 (Lighter 融合模式)
         ctx.globalCompositeOperation = 'lighter';
         ctx.fillStyle = config.color;
         
-        // 开启光晕，起到“胶水”的作用，把粒子粘在一起
+        // 开启光晕胶水
         ctx.shadowBlur = 10;
         ctx.shadowColor = config.color;
 
         particles.forEach(p => {
-            // 波浪飘动
             const wx = Math.sin(time * config.waveSpeed + p.offset) * config.waveAmp;
             const wy = Math.cos(time * config.waveSpeed + p.offset) * config.waveAmp;
             
