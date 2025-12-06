@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Minimalist</title>
+    <title>Mani - Sacred Orbit</title>
     <style>
         body { 
             margin: 0; overflow: hidden; background: #000; 
@@ -13,45 +13,43 @@
 
         #ui {
             position: absolute; top: 20px; left: 20px; width: 260px;
-            background: rgba(10, 15, 20, 0.7); /* 更透明 */
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(20, 15, 10, 0.8); /* 偏暖色调的背景 */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,215,0,0.15); /* 金色边框 */
             border-radius: 12px;
-            padding: 15px; color: #fff; z-index: 100;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            padding: 20px; color: #fff; z-index: 100;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
         }
         
         .hidden { opacity: 0; pointer-events: none; transform: translateX(-30px); }
 
         h3 { 
-            margin: 0 0 5px 0; color: #00e5ff; font-size: 13px; 
-            letter-spacing: 3px; text-align: center; text-transform: uppercase;
+            margin: 0 0 10px 0; color: #ffd700; font-size: 14px; 
+            letter-spacing: 2px; text-align: center; text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(255,215,0,0.3);
         }
 
         #status-bar {
-            font-size: 10px; color: #0f0; text-align: center; margin-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;
+            font-size: 10px; color: #aaa; text-align: center; margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
         }
 
-        .btn-group { display: flex; gap: 8px; margin-top: 8px; }
         .btn {
-            flex: 1; padding: 8px; border: none; border-radius: 4px;
-            font-weight: bold; cursor: pointer; font-size: 11px;
-            color: white; transition: 0.2s;
+            width: 100%; padding: 10px; border: none; border-radius: 4px;
+            /* 金色渐变按钮 */
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: #000; font-weight: bold; cursor: pointer;
+            margin-top: 8px; transition: 0.2s; font-size: 12px;
         }
-        .btn-primary { background: linear-gradient(135deg, #00c6ff, #0072ff); }
-        .btn-primary:hover { box-shadow: 0 0 10px rgba(0,198,255,0.5); }
-        
-        .btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
-        .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+        .btn:hover { box-shadow: 0 0 15px rgba(255,215,0,0.5); filter: brightness(1.1); }
 
-        .control { margin-bottom: 8px; }
-        label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 2px; }
-        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; height: 2px; }
+        .control { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; font-size: 10px; color: #ccc; margin-bottom: 3px; letter-spacing: 1px; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #ffd700; height: 2px; }
         input[type="color"] { width: 100%; border: none; height: 20px; padding: 0; background: none; cursor: pointer; }
         input[type="file"] { width: 100%; font-size: 10px; color: #888; }
 
-        .hint { font-size: 9px; color: #556; text-align: center; margin-top: 5px; }
+        .hint { font-size: 9px; color: #666; text-align: center; margin-top: 10px; }
         
         canvas { display: block; }
     </style>
@@ -59,40 +57,35 @@
 <body>
 
 <div id="ui">
-    <h3>MINIMALIST STARDUST</h3>
-    <div id="status-bar">就绪</div>
+    <h3>SACRED ORBIT</h3>
+    <div id="status-bar">等待 SVG 文件...</div>
     
     <div class="control">
         <label>SOURCE / 源文件</label>
         <input type="file" id="imageInput" accept="image/*,.svg">
-    </div>
-    
-    <div class="btn-group">
-        <button class="btn btn-primary" onclick="runGen()">ACTIVATE</button>
-        <button class="btn btn-secondary" onclick="toggleVortex()">BG ON/OFF</button>
+        <button class="btn" onclick="runGen()">ACTIVATE / 激活法座</button>
     </div>
 
-    <div style="margin: 10px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
+    <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
 
     <div class="control">
         <label>ZOOM / 缩放 <span id="val-zoom">40%</span></label>
         <input type="range" min="10" max="100" value="40" oninput="updateConfig('zoom', this.value)">
     </div>
 
-    <!-- 范围改大：1(极稀) - 10(极密) -->
     <div class="control">
-        <label>DENSITY / 粒子数量 (往左拉变稀)</label>
-        <input type="range" id="densityRange" min="1" max="10" step="1" value="4" oninput="resampleImage()">
+        <label>ORBIT SPEED / 旋绕速度</label>
+        <input type="range" id="speedRange" min="0" max="50" value="15" oninput="config.orbitSpeed=this.value*0.0001">
     </div>
 
     <div class="control">
-        <label>GLOW / 光晕</label>
-        <input type="range" min="0" max="50" value="20" oninput="updateConfig('glow', this.value)">
+        <label>DENSITY / 文字密度</label>
+        <input type="range" id="densityRange" min="1" max="5" step="1" value="3" oninput="resampleImage()">
     </div>
 
     <div class="control">
-        <label>COLOR / 颜色</label>
-        <input type="color" id="colorPicker" value="#00e5ff" oninput="updateConfig('color', this.value)">
+        <label>COLOR / 主题色</label>
+        <input type="color" id="colorPicker" value="#ffd700" oninput="updateConfig('color', this.value)">
     </div>
 
     <div class="hint">按 <b>H</b> 键隐藏界面</div>
@@ -104,8 +97,7 @@
     const statusEl = document.getElementById('status-bar');
     function setStatus(msg, isError=false) {
         statusEl.innerText = msg;
-        statusEl.style.color = isError ? '#ff5555' : '#0f0';
-        console.log(msg);
+        statusEl.style.color = isError ? '#ff5555' : '#888';
     }
     window.onerror = function(msg) { setStatus("Err: " + msg, true); };
 
@@ -113,7 +105,7 @@
     const ctx = canvas.getContext('2d');
     
     let textParticles = [];
-    let vortexParticles = [];
+    let orbitParticles = []; // 旋绕粒子
     let cachedImageData = null; 
     let cachedWidth = 0;
     let cachedHeight = 0;
@@ -121,13 +113,12 @@
     let config = {
         baseX: 0, baseY: 0, 
         scale: 1,        
-        targetScale: 0.40, // 默认 40% 中景
-        color: '#00e5ff',
+        targetScale: 0.40, 
+        color: '#ffd700', // 默认金色
         pSize: 1.2,      
         glow: 20,        
-        waveAmp: 5,      
-        waveSpeed: 0.002,
-        vortexOn: true   
+        orbitSpeed: 0.0015, // 旋转速度
+        orbitRadius: 1.0    // 环绕半径系数
     };
 
     function resize() {
@@ -139,33 +130,69 @@
         if (cachedWidth > 0) {
             config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
         }
-        initVortex();
+        initOrbit();
     }
     window.addEventListener('resize', resize);
 
-    // --- 1. 背景大减负 (250个粒子) ---
-    function initVortex() {
-        vortexParticles = [];
-        const count = 250; // 极简风格
+    // --- 1. 右旋粒子光环 (Right-Turning Orbit) ---
+    function initOrbit() {
+        orbitParticles = [];
+        const count = 1500; // 粒子数量，形成流动的光带
+        
         for(let i=0; i<count; i++) {
-            vortexParticles.push({
-                angle: Math.random() * Math.PI * 2,
-                radius: Math.random() * (Math.max(canvas.width, canvas.height) * 0.9),
-                speed: (Math.random() * 0.0005 + 0.0002) * (Math.random()>0.5 ? 1 : -1), // 极慢
-                size: Math.random() * 1.5 + 0.5,
-                alpha: Math.random() * 0.3 + 0.1 // 很淡
-            });
+            orbitParticles.push(new OrbitParticle());
         }
-        setStatus("背景已净化");
     }
 
-    function toggleVortex() {
-        config.vortexOn = !config.vortexOn;
-        if(config.vortexOn) initVortex();
-        else vortexParticles = [];
+    class OrbitParticle {
+        constructor() { this.reset(true); }
+        
+        reset(randomStart = false) {
+            // 随机角度
+            this.angle = Math.random() * Math.PI * 2;
+            
+            // 半径分布：主要集中在外部，形成光环
+            // 基础半径 + 随机扩散
+            const minR = Math.min(canvas.width, canvas.height) * 0.35;
+            const maxR = Math.min(canvas.width, canvas.height) * 0.9;
+            this.radius = minR + Math.random() * (maxR - minR);
+            
+            // 速度：近快远慢，模拟引力
+            // 正数 = 右旋 (顺时针)
+            this.speed = (50 / this.radius) * 0.05 + Math.random() * 0.002; 
+            
+            this.size = Math.random() * 1.5 + 0.5;
+            this.alpha = Math.random() * 0.5 + 0.1;
+            
+            // 稍微带一点垂直倾斜，形成立体光环感
+            this.tilt = Math.random() * 0.4 - 0.2; 
+        }
+
+        update() {
+            this.angle += this.speed * (config.orbitSpeed * 1000); // 速度受控
+        }
+
+        draw() {
+            // 简单的 3D 投影效果
+            // x = cos, y = sin * 压扁系数
+            const x = config.baseX + Math.cos(this.angle) * this.radius;
+            const y = config.baseY + Math.sin(this.angle) * this.radius * 0.5 + (Math.sin(this.angle) * this.radius * this.tilt); 
+            
+            ctx.beginPath();
+            ctx.arc(x, y, this.size, 0, Math.PI*2);
+            
+            // 深度变暗效果
+            const z = Math.sin(this.angle); // 模拟前后
+            const alpha = this.alpha * (z > 0 ? 1 : 0.3); // 后面的暗，前面的亮
+            
+            ctx.fillStyle = config.color; // 跟随主题色
+            ctx.globalAlpha = alpha;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
     }
 
-    // --- 2. 图像引擎 ---
+    // --- 2. 图像引擎 (静态修正版) ---
     function patchSVG(svg) {
         if (!svg.includes('width=') || !svg.includes('height=')) {
             return svg.replace('<svg', '<svg width="1000" height="1000" ');
@@ -174,10 +201,10 @@
     }
 
     function processSource(src) {
-        setStatus("读取中...");
+        setStatus("读取图像...");
         const img = new Image();
         img.onload = () => {
-            setStatus("解析中...");
+            setStatus("解析轮廓...");
             const w = 1000; const h = 800;
             const off = document.createElement('canvas');
             off.width = w; off.height = h;
@@ -197,7 +224,7 @@
             resampleImage(); 
             config.scale = (window.innerWidth * config.targetScale) / w; 
             
-            if(textParticles.length > 0) setStatus(`生成: ${textParticles.length} 点`);
+            if(textParticles.length > 0) setStatus(`生成成功`);
             else setStatus("无内容", true);
         };
         img.onerror = () => setStatus("加载失败", true);
@@ -207,13 +234,9 @@
     function resampleImage() {
         if (!cachedImageData) return;
         textParticles = [];
-        
-        // 密度算法大改：
-        // 范围 1-10
-        // 1 = 间距 12 (极稀)
-        // 10 = 间距 2 (极密)
+        // 密度调节
         const val = parseInt(document.getElementById('densityRange').value);
-        const gap = Math.max(2, 13 - val); 
+        const gap = Math.max(2, 9 - val); // 越右越密
         
         const w = cachedWidth; const h = cachedHeight;
         for(let y=0; y<h; y+=gap) {
@@ -222,61 +245,43 @@
                 const lum = (cachedImageData[i] + cachedImageData[i+1] + cachedImageData[i+2])/3;
                 if(Math.abs(lum - 128) > 20) {
                     textParticles.push({
-                        x: Math.random()*canvas.width,
-                        y: Math.random()*canvas.height,
-                        ox: x-w/2, oy: y-h/2,
-                        vx: 0, vy: 0,
-                        offset: (x * 0.01 + y * 0.01)
+                        // ox, oy 是相对于中心的原始坐标
+                        ox: x-w/2, 
+                        oy: y-h/2,
+                        // 记录原始位置，不做波浪干扰
+                        x: 0, y: 0 
                     });
                 }
             }
         }
-        setStatus(`点数: ${textParticles.length}`);
     }
 
-    // --- 3. 渲染 ---
+    // --- 3. 渲染循环 ---
     function animate() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+        // 拖尾加深，让运动轨迹更明显
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const time = Date.now() * 0.001;
+        // A. 绘制右旋光环
+        ctx.globalCompositeOperation = 'lighter'; // 叠加发光
+        orbitParticles.forEach(p => {
+            p.update();
+            p.draw();
+        });
 
-        // 背景
-        if (config.vortexOn) {
-            ctx.globalCompositeOperation = 'lighter';
-            vortexParticles.forEach(p => {
-                p.angle += p.speed;
-                p.radius += Math.sin(Date.now()*0.0005 + p.angle)*0.1;
-                const x = config.baseX + Math.cos(p.angle) * p.radius;
-                const y = config.baseY + Math.sin(p.angle) * p.radius * 0.6;
-                
-                ctx.beginPath();
-                ctx.arc(x, y, p.size, 0, Math.PI*2);
-                ctx.fillStyle = `rgba(200, 230, 255, ${p.alpha})`;
-                ctx.fill();
-            });
-        }
-
-        // 文字
-        ctx.globalCompositeOperation = 'lighter';
+        // B. 绘制文字 (绝对静止/庄严)
         ctx.shadowBlur = config.glow;             
         ctx.shadowColor = config.color;           
-        ctx.fillStyle = '#FFFFFF';
+        ctx.fillStyle = '#FFFFFF'; // 白核
 
         textParticles.forEach(p => {
-            const wx = Math.sin(time + p.offset) * config.waveAmp;
-            const wy = Math.cos(time * 1.1 + p.offset) * config.waveAmp;
+            // 核心修改：移除所有 Math.sin/cos 的波动代码
+            // 坐标只受缩放和中心位置影响
+            const tx = config.baseX + (p.ox * config.scale);
+            const ty = config.baseY + (p.oy * config.scale);
             
-            const tx = config.baseX + (p.ox * config.scale) + wx;
-            const ty = config.baseY + (p.oy * config.scale) + wy;
-            
-            p.vx += (tx - p.x) * 0.1;
-            p.vy += (ty - p.y) * 0.1;
-            p.x += p.vx; p.y += p.vy;
-            p.vx *= 0.85; p.vy *= 0.85;
-
             ctx.beginPath();
-            ctx.arc(p.x, p.y, config.pSize, 0, Math.PI*2);
+            ctx.arc(tx, ty, config.pSize, 0, Math.PI*2);
             ctx.fill();
         });
         
@@ -312,17 +317,12 @@
             config[key] = key === 'color' ? val : parseFloat(val);
         }
     };
-    
-    window.toggleVortex = function() {
-        config.vortexOn = !config.vortexOn;
-        if(config.vortexOn) initVortex();
-        else vortexParticles = [];
-    };
 
     window.addEventListener('keydown', e => {
         if(e.key.toLowerCase() === 'h') document.getElementById('ui').classList.toggle('hidden');
     });
     
+    // 鼠标滚轮缩放
     window.addEventListener('wheel', e => {
         let currentScale = config.targetScale;
         currentScale += e.deltaY * -0.0005;
@@ -333,7 +333,7 @@
     });
 
     resize();
-    initVortex();
+    initOrbit();
     animate();
 
 </script>
