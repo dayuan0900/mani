@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Elegant Lite</title>
+    <!-- 禁止缓存策略 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Mani - Final Lite</title>
     <style>
         body { 
             margin: 0; overflow: hidden; background: #000; 
@@ -13,31 +16,30 @@
 
         #ui {
             position: absolute; top: 20px; left: 20px; width: 260px;
-            background: rgba(10, 16, 25, 0.7); /* 更轻薄的背景 */
+            background: rgba(10, 20, 30, 0.85); /* 深色背景 */
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 12px;
             padding: 15px; color: #fff; z-index: 100;
             box-shadow: 0 5px 30px rgba(0,0,0,0.5);
-            transition: 0.3s;
         }
         
         .hidden { opacity: 0; pointer-events: none; transform: translateX(-30px); }
 
         h3 { 
-            margin: 0 0 12px 0; color: #fff; font-size: 13px; 
-            letter-spacing: 3px; text-align: center; text-transform: uppercase;
+            margin: 0 0 12px 0; color: #00e5ff; font-size: 14px; 
+            letter-spacing: 2px; text-align: center; text-transform: uppercase;
             border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
         }
 
         .btn-group { display: flex; gap: 8px; margin-top: 8px; }
         .btn {
-            flex: 1; padding: 8px; border: none; border-radius: 4px;
+            flex: 1; padding: 10px; border: none; border-radius: 4px;
             font-weight: bold; cursor: pointer; font-size: 11px;
             color: white; transition: 0.2s;
         }
         .btn-primary { background: linear-gradient(135deg, #00c6ff, #0072ff); }
-        .btn-primary:hover { box-shadow: 0 0 10px rgba(0,198,255,0.5); }
+        .btn-primary:hover { box-shadow: 0 0 15px rgba(0,198,255,0.6); }
         
         .btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
         .btn-secondary:hover { background: rgba(255,255,255,0.2); }
@@ -46,7 +48,7 @@
         label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 3px; letter-spacing: 1px; }
         input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; height: 2px; }
         input[type="color"] { width: 100%; border: none; height: 20px; padding: 0; background: none; cursor: pointer; }
-        input[type="file"] { width: 100%; font-size: 10px; color: #888; }
+        input[type="file"] { width: 100%; font-size: 10px; color: #ccc; }
 
         .hint { font-size: 9px; color: #667; text-align: center; margin-top: 8px; }
         
@@ -56,7 +58,7 @@
 <body>
 
 <div id="ui">
-    <h3>ELEGANT LITE</h3>
+    <h3>MANI - FINAL LITE</h3>
     
     <div class="control">
         <label>SOURCE / 源文件</label>
@@ -64,16 +66,16 @@
     </div>
     
     <div class="btn-group">
-        <button class="btn btn-primary" onclick="runGen()">ACTIVATE</button>
-        <button class="btn btn-secondary" onclick="toggleVortex()">VORTEX</button>
+        <button class="btn btn-primary" onclick="runGen()">ACTIVATE / 激活</button>
+        <button class="btn btn-secondary" onclick="toggleVortex()">VORTEX / 旋绕</button>
     </div>
 
     <div style="margin: 12px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
 
-    <!-- 新增缩放控制 -->
+    <!-- 中景控制 -->
     <div class="control">
-        <label>ZOOM / 缩放 (大小) <span id="val-zoom">40%</span></label>
-        <input type="range" min="10" max="100" value="40" oninput="updateConfig('zoom', this.value)">
+        <label>ZOOM / 画面缩放 <span id="val-zoom">45%</span></label>
+        <input type="range" min="10" max="100" value="45" oninput="updateConfig('zoom', this.value)">
     </div>
 
     <div class="control">
@@ -108,235 +110,5 @@
 
     let config = {
         baseX: 0, baseY: 0, 
-        scale: 1,        // 最终渲染缩放
-        targetScale: 0.4, // 目标占比 (0.4 = 40% 屏幕宽度)
-        color: '#00e5ff',
-        pSize: 1.2,      
-        glow: 25,        
-        waveAmp: 5,      
-        waveSpeed: 0.002,
-        vortexOn: true   
-    };
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        config.baseX = canvas.width / 2;
-        config.baseY = canvas.height / 2;
-        
-        // 窗口大小改变时，重新计算缩放
-        if (cachedWidth > 0) {
-            config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
-        }
-        initVortex();
-    }
-    window.addEventListener('resize', resize);
-
-    // --- 1. 背景旋绕 (轻量化) ---
-    function initVortex() {
-        vortexParticles = [];
-        const count = 600; // 减少数量，提升性能 (之前是1200)
-        for(let i=0; i<count; i++) {
-            vortexParticles.push(new VortexParticle());
-        }
-    }
-
-    class VortexParticle {
-        constructor() { this.reset(); }
-        reset() {
-            this.angle = Math.random() * Math.PI * 2;
-            // 让背景分布更广一些，包围文字
-            this.radius = Math.random() * (Math.max(canvas.width, canvas.height) * 0.9);
-            this.speed = (Math.random() * 0.001 + 0.0002) * (Math.random()>0.5 ? 1 : -1);
-            this.size = Math.random() * 2;
-            this.alpha = Math.random() * 0.4;
-        }
-        update() {
-            this.angle += this.speed;
-            this.radius += Math.sin(Date.now() * 0.0005 + this.angle) * 0.1;
-        }
-        draw() {
-            const x = config.baseX + Math.cos(this.angle) * this.radius;
-            const y = config.baseY + Math.sin(this.angle) * this.radius * 0.6; 
-            
-            ctx.beginPath();
-            ctx.arc(x, y, this.size, 0, Math.PI*2);
-            // 边缘渐隐
-            const distRatio = Math.min(1, this.radius / (canvas.width));
-            const alpha = this.alpha * (1 - distRatio * 0.5);
-            
-            ctx.fillStyle = `rgba(180, 220, 255, ${alpha})`;
-            ctx.fill();
-        }
-    }
-
-    function toggleVortex() {
-        config.vortexOn = !config.vortexOn;
-        if(config.vortexOn) initVortex();
-        else vortexParticles = [];
-    }
-
-    // --- 2. 图像引擎 (轻量采样) ---
-    function patchSVG(svg) {
-        if (!svg.includes('width=') || !svg.includes('height=')) {
-            // 降级采样分辨率到 1200，保证流畅度
-            return svg.replace('<svg', '<svg width="1200" height="1200" ');
-        }
-        return svg;
-    }
-
-    function processSource(src) {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.onload = () => {
-            // 性能平衡点：1000px 宽度
-            const w = 1000; const h = 800;
-            const off = document.createElement('canvas');
-            off.width = w; off.height = h;
-            const offCtx = off.getContext('2d');
-            
-            offCtx.fillStyle = '#808080';
-            offCtx.fillRect(0,0,w,h);
-            
-            const aspect = img.width/img.height||1;
-            let dw=w, dh=w/aspect;
-            if(dh>h){ dh=h; dw=h*aspect; }
-            offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
-            
-            cachedImageData = offCtx.getImageData(0,0,w,h).data;
-            cachedWidth = w; cachedHeight = h;
-            
-            resampleImage(); 
-            // 初始缩放设为中景 (40%)
-            config.scale = (window.innerWidth * config.targetScale) / w; 
-        };
-        img.src = src;
-    }
-
-    function resampleImage() {
-        if (!cachedImageData) return;
-        textParticles = [];
-        const gapVal = parseInt(document.getElementById('densityRange').value);
-        
-        // 增加采样间距，大幅减少粒子数
-        // 滑块 1 -> gap 8; 滑块 5 -> gap 3
-        const gap = Math.max(3, 9 - gapVal); 
-        
-        const w = cachedWidth; const h = cachedHeight;
-        for(let y=0; y<h; y+=gap) {
-            for(let x=0; x<w; x+=gap) {
-                const i = (y*w+x)*4;
-                const lum = (cachedImageData[i] + cachedImageData[i+1] + cachedImageData[i+2])/3;
-                if(Math.abs(lum - 128) > 20) {
-                    textParticles.push({
-                        x: Math.random()*canvas.width,
-                        y: Math.random()*canvas.height,
-                        ox: x-w/2, oy: y-h/2,
-                        vx: 0, vy: 0,
-                        offset: (x * 0.01 + y * 0.01)
-                    });
-                }
-            }
-        }
-    }
-
-    // --- 3. 渲染循环 ---
-    function animate() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const time = Date.now() * 0.001;
-
-        // A. 背景
-        if (config.vortexOn) {
-            ctx.globalCompositeOperation = 'lighter';
-            vortexParticles.forEach(p => { p.update(); p.draw(); });
-        }
-
-        // B. 文字
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.shadowBlur = config.glow;             
-        ctx.shadowColor = config.color;           
-        ctx.fillStyle = '#FFFFFF'; // 白核
-
-        textParticles.forEach(p => {
-            const wx = Math.sin(time + p.offset) * config.waveAmp;
-            const wy = Math.cos(time * 1.1 + p.offset) * config.waveAmp;
-            
-            const tx = config.baseX + (p.ox * config.scale) + wx;
-            const ty = config.baseY + (p.oy * config.scale) + wy;
-            
-            p.vx += (tx - p.x) * 0.1;
-            p.vy += (ty - p.y) * 0.1;
-            p.x += p.vx; p.y += p.vy;
-            p.vx *= 0.85; p.vy *= 0.85;
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, config.pSize, 0, Math.PI*2);
-            ctx.fill();
-        });
-        
-        ctx.shadowBlur = 0;
-        ctx.globalCompositeOperation = 'source-over';
-        requestAnimationFrame(animate);
-    }
-
-    // 交互
-    window.runGen = function() {
-        const input = document.getElementById('imageInput');
-        if(!input.files[0]) { alert("请选择图片"); return; }
-        const file = input.files[0];
-        const r = new FileReader();
-        if(file.type.includes('svg')) {
-            r.readAsText(file);
-            r.onload = e => {
-                const url = URL.createObjectURL(new Blob([patchSVG(e.target.result)], {type:'image/svg+xml'}));
-                processSource(url);
-            };
-        } else {
-            r.readAsDataURL(file);
-            r.onload = e => processSource(e.target.result);
-        }
-    };
-
-    window.updateConfig = function(key, val) {
-        if(key === 'zoom') {
-            config.targetScale = val / 100;
-            document.getElementById('val-zoom').innerText = val + '%';
-            if(cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
-        } else {
-            config[key] = key === 'color' ? val : parseFloat(val);
-        }
-    };
+        scale: 1,        
     
-    window.toggleVortex = function() {
-        config.vortexOn = !config.vortexOn;
-        if(config.vortexOn) initVortex();
-        else vortexParticles = [];
-    };
-
-    window.addEventListener('keydown', e => {
-        if(e.key.toLowerCase() === 'h') document.getElementById('ui').classList.toggle('hidden');
-    });
-    
-    // 鼠标滚轮缩放
-    window.addEventListener('wheel', e => {
-        const zoomRange = document.getElementById('val-zoom');
-        let currentScale = config.targetScale;
-        currentScale += e.deltaY * -0.0005;
-        currentScale = Math.min(Math.max(0.1, currentScale), 1.0);
-        
-        config.targetScale = currentScale;
-        if(cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
-        
-        // 更新UI显示
-        // 注意：这里不做太复杂的双向绑定，以免卡顿
-    });
-
-    resize();
-    initVortex();
-    animate();
-
-</script>
-</body>
-</html>
