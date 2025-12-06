@@ -3,33 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Sumeru Galaxy Disk</title>
+    <title>Mani - 3D Galaxy Engine</title>
     <style>
-        body { 
-            margin: 0; overflow: hidden; background: #000; 
-            font-family: 'Segoe UI', monospace; user-select: none; 
-        }
-
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', monospace; }
+        
         #ui {
             position: absolute; top: 20px; left: 20px; width: 280px;
-            background: rgba(12, 10, 8, 0.85);
-            border: 1px solid rgba(255,200,0,0.2);
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,200,0,0.15);
             border-radius: 12px;
-            padding: 15px; color: #fff; z-index: 100;
-            box-shadow: 0 10px 60px rgba(0,0,0,0.9);
+            padding: 20px; color: #fff; z-index: 100;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
         }
 
         h3 { 
-            margin: 0 0 10px 0; color: #ffca28; font-size: 14px; 
-            letter-spacing: 2px; text-align: center; text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(255,200,0,0.4);
-        }
-
-        #status {
-            font-size: 10px; color: #888; text-align: center; margin-bottom: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;
-            height: 15px; white-space: nowrap; overflow: hidden;
+            margin: 0 0 15px 0; color: #ffca28; font-size: 14px; 
+            letter-spacing: 3px; text-align: center; text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(255,160,0,0.5);
         }
 
         .btn {
@@ -37,312 +28,350 @@
             background: linear-gradient(135deg, #ffca28, #ff6f00);
             color: #000; font-weight: bold; cursor: pointer;
             margin-top: 5px; font-size: 12px; letter-spacing: 1px;
+            transition: 0.2s;
         }
-        .btn:hover { filter: brightness(1.1); box-shadow: 0 0 20px rgba(255,160,0,0.4); }
+        .btn:hover { filter: brightness(1.2); box-shadow: 0 0 20px rgba(255,140,0,0.4); }
 
-        .control { margin-bottom: 10px; }
-        label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 3px; }
-        input[type="range"] { width: 100%; cursor: pointer; accent-color: #ffca28; height: 2px; }
+        .control { margin-bottom: 12px; }
+        label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 4px; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #ffca28; height: 3px; }
         input[type="file"] { width: 100%; font-size: 10px; color: #888; }
-        input[type="color"] { width: 100%; height: 25px; border: none; padding: 0; background: none; }
+        input[type="color"] { width: 100%; border: none; height: 25px; background: none; cursor: pointer; padding: 0; }
 
-        .hint { font-size: 9px; color: #555; text-align: center; margin-top: 8px; }
-        canvas { display: block; }
+        .hint { font-size: 9px; color: #666; text-align: center; margin-top: 10px; }
+        
+        #loading {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 999; display: flex;
+            justify-content: center; align-items: center; color: #ffca28;
+            font-size: 12px; letter-spacing: 2px; transition: opacity 0.5s;
+        }
     </style>
+    
+    <!-- 引入 Three.js 引擎 (使用模块化 CDN) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
 
+<div id="loading">INITIALIZING 3D ENGINE...</div>
+
 <div id="ui">
-    <h3>SUMERU GALAXY DISK</h3>
-    <div id="status">系统就绪</div>
+    <h3>3D GALAXY CORE</h3>
     
     <div class="control">
         <label>SOURCE / 源文件</label>
         <input type="file" id="imageInput" accept="image/*,.svg">
-        <button class="btn" onclick="runGen()">ACTIVATE / 激活</button>
+        <button class="btn" id="btnGen">ACTIVATE / 激活法座</button>
     </div>
 
-    <div style="border-top:1px solid rgba(255,255,255,0.1); margin:12px 0;"></div>
-
-    <!-- 找回的滑块 -->
-    <div class="control">
-        <label>GALAXY Y-POS / 星系上下调节 <span id="val-ypos">0</span></label>
-        <input type="range" min="-300" max="300" value="0" oninput="updateConfig('orbitY', this.value)">
-    </div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;"></div>
 
     <div class="control">
-        <label>GALAXY TILT / 星系倾斜度</label>
-        <input type="range" min="0" max="60" value="25" oninput="config.orbitTilt=this.value*0.01">
+        <label>GALAXY SIZE / 星系范围</label>
+        <input type="range" id="galaxySize" min="10" max="50" value="25" step="1">
     </div>
 
     <div class="control">
-        <label>GALAXY SIZE / 星系大小</label>
-        <input type="range" id="ringCount" min="2000" max="8000" step="500" value="4000" oninput="initOrbit()">
+        <label>TEXT SIZE / 文字大小</label>
+        <input type="range" id="textSize" min="0.5" max="3" value="1.5" step="0.1">
     </div>
 
     <div class="control">
-        <label>TEXT SPACING / 字间距</label>
-        <input type="range" min="100" max="200" value="100" oninput="config.letterSpacing=this.value/100">
+        <label>GALAXY DENSITY / 星系粒子数 (最高10万)</label>
+        <input type="range" id="galaxyCount" min="10000" max="100000" value="50000" step="5000">
     </div>
 
     <div class="control">
-        <label>TEXT DENSITY / 文字密度</label>
-        <input type="range" id="densityRange" min="1" max="5" step="1" value="3" oninput="resampleImage()">
+        <label>CORE COLOR / 核心颜色</label>
+        <input type="color" id="colorInside" value="#ff6030">
     </div>
-
+    
     <div class="control">
-        <label>COLOR / 主题色</label>
-        <input type="color" id="colorPicker" value="#ffca28" oninput="updateConfig('color', this.value)">
+        <label>EDGE COLOR / 边缘颜色</label>
+        <input type="color" id="colorOutside" value="#1b3984">
     </div>
 
-    <div class="hint">按 <b>H</b> 键隐藏 | 滚轮缩放</div>
+    <div class="hint">左键旋转 | 右键平移 | 滚轮缩放</div>
 </div>
 
-<canvas id="canvas"></canvas>
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-<script data-cfasync="false">
-    const statusEl = document.getElementById('status');
-    function setStatus(msg, isError=false) {
-        statusEl.innerText = msg;
-        statusEl.style.color = isError ? '#ff5555' : '#0f0';
-    }
-    window.onerror = function(msg) { setStatus("Err: " + msg, true); };
+    // --- 1. 场景初始化 ---
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x000000, 0.02); // 远处雾化
 
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 10, 30); // 俯视角度
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false }); // Bloom 不需要抗锯齿
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    document.body.appendChild(renderer.domElement);
+
+    // 控制器
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+
+    // 后处理 (Bloom 发光)
+    const renderScene = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0;
+    bloomPass.strength = 1.2; // 发光强度
+    bloomPass.radius = 0.5;
+
+    const composer = new EffectComposer(renderer);
+    composer.addPass(renderScene);
+    composer.addPass(bloomPass);
+
+    // --- 2. 变量定义 ---
+    let galaxyGeometry = null;
+    let galaxyMaterial = null;
+    let galaxyPoints = null;
     
-    let textParticles = [];
-    let orbitParticles = [];
-    let cachedImageData = null;
-    let cachedWidth = 0; 
-    let cachedHeight = 0;
+    let textGeometry = null;
+    let textMaterial = null;
+    let textPoints = null;
 
-    let config = {
-        baseX: 0, baseY: 0, 
-        scale: 1, 
-        targetScale: 0.30, 
-        color: '#ffca28', // 金黄色
-        pSize: 1.0,      
-        glow: 20,
-        orbitSpeed: 0.005, 
-        orbitTilt: 0.25,    // 默认稍微倾斜一点，像盘子
-        orbitY: 0,          // 找回的垂直位置参数
-        letterSpacing: 1.0 
+    const parameters = {
+        count: 50000,
+        size: 0.02,
+        radius: 25,
+        branches: 3,
+        spin: 1,
+        randomness: 0.2,
+        randomnessPower: 3,
+        insideColor: '#ff6030',
+        outsideColor: '#1b3984'
     };
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        config.baseX = canvas.width / 2;
-        config.baseY = canvas.height / 2;
-        if(cachedWidth > 0) updateScale();
-        initOrbit();
-    }
-    window.addEventListener('resize', resize);
-
-    function updateScale() {
-        config.scale = (window.innerWidth * config.targetScale) / cachedWidth; 
-    }
-
-    // --- 1. 星系盘核心系统 (Galaxy Disk Algorithm) ---
-    // 参考图2：核心极亮极密，边缘稀疏，呈盘状
-    function initOrbit() {
-        orbitParticles = [];
-        const count = parseInt(document.getElementById('ringCount').value) || 4000;
-        
-        for(let i=0; i<count; i++) {
-            // 角度均匀分布
-            const angle = Math.random() * Math.PI * 2;
-            
-            // 半径：使用高斯分布/指数分布，让粒子疯狂聚集在中心
-            // Math.random()^2 会让大部分数值很小（靠近圆心）
-            // 形成：核心(极密) -> 外部(渐疏)
-            const dist = Math.pow(Math.random(), 1.5); 
-            
-            const maxR = Math.max(canvas.width, canvas.height) * 0.7;
-            const r = dist * maxR; 
-            
-            // 速度：核心转得快，外圈转得慢 (开普勒运动)
-            const speed = (200 / (r+50)) * 0.001 + 0.0002;
-
-            // 颜色亮度：核心接近白色，外部是金黄色
-            const brightness = 1 - dist; // 越靠近中心越亮
-
-            orbitParticles.push({
-                angle: angle,
-                r: r,
-                speed: speed,
-                // 粒子大小：核心粒子稍微大一点点，形成光团感
-                size: Math.random() * 1.5 + 0.5 + (brightness * 0.5),
-                brightness: brightness,
-                // 垂直随机抖动，形成“厚度”
-                yOffset: (Math.random() - 0.5) * 30 * (1-dist) 
-            });
+    // --- 3. 星系生成器 (仿照参考图) ---
+    function generateGalaxy() {
+        if (galaxyPoints !== null) {
+            galaxyGeometry.dispose();
+            galaxyMaterial.dispose();
+            scene.remove(galaxyPoints);
         }
-        setStatus(`星系粒子: ${count}`);
+
+        galaxyGeometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(parameters.count * 3);
+        const colors = new Float32Array(parameters.count * 3);
+
+        const colorInside = new THREE.Color(parameters.insideColor);
+        const colorOutside = new THREE.Color(parameters.outsideColor);
+
+        for (let i = 0; i < parameters.count; i++) {
+            const i3 = i * 3;
+
+            // 核心算法：生成螺旋盘
+            const radius = Math.random() * parameters.radius;
+            const spinAngle = radius * parameters.spin;
+            const branchAngle = (i % parameters.branches) / parameters.branches * Math.PI * 2;
+
+            const randomX = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * parameters.randomness * radius;
+            const randomY = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * parameters.randomness * radius;
+            const randomZ = Math.pow(Math.random(), parameters.randomnessPower) * (Math.random() < 0.5 ? 1 : -1) * parameters.randomness * radius;
+
+            positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+            positions[i3 + 1] = randomY * 2; // 稍微压扁 Y 轴，形成厚度
+            positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+            // 颜色混合
+            const mixedColor = colorInside.clone();
+            mixedColor.lerp(colorOutside, radius / parameters.radius);
+
+            colors[i3] = mixedColor.r;
+            colors[i3 + 1] = mixedColor.g;
+            colors[i3 + 2] = mixedColor.b;
+        }
+
+        galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        galaxyMaterial = new THREE.PointsMaterial({
+            size: parameters.size,
+            sizeAttenuation: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending, // 关键：发光叠加
+            vertexColors: true
+        });
+
+        galaxyPoints = new THREE.Points(galaxyGeometry, galaxyMaterial);
+        scene.add(galaxyPoints);
     }
 
-    // --- 2. 图像引擎 ---
+    // --- 4. 文字粒子生成器 (3D版) ---
     function patchSVG(svg) {
         if (!svg.includes('width=') || !svg.includes('height=')) {
-            return svg.replace('<svg', '<svg width="1500" height="1500" ');
+            return svg.replace('<svg', '<svg width="2000" height="2000" ');
         }
         return svg;
     }
 
     function processSource(src) {
-        setStatus("读取中...");
         const img = new Image();
         img.onload = () => {
-            setStatus("解析中...");
             const w = 1500; const h = 1000;
-            const off = document.createElement('canvas');
-            off.width = w; off.height = h;
-            const offCtx = off.getContext('2d');
+            const canvas2d = document.createElement('canvas');
+            canvas2d.width = w; canvas2d.height = h;
+            const ctx2d = canvas2d.getContext('2d');
             
-            offCtx.fillStyle = '#808080';
-            offCtx.fillRect(0,0,w,h);
+            ctx2d.fillStyle = '#000000'; // 黑底
+            ctx2d.fillRect(0,0,w,h);
             
             const aspect = img.width/img.height||1;
-            const padding = 150;
-            const drawW = w - padding*2;
-            const drawH = h - padding*2;
+            const drawW = w; const drawH = w/aspect;
+            ctx2d.drawImage(img, (w-drawW)/2, (h-drawH)/2, drawW, drawH);
             
-            let dw=drawW, dh=drawW/aspect;
-            if(dh > drawH){ dh=drawH; dw=drawH*aspect; }
-            
-            offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
-            
-            cachedImageData = offCtx.getImageData(0,0,w,h).data;
-            cachedWidth = w; cachedHeight = h;
-            
-            resampleImage(); 
-            updateScale(); 
-            setStatus(`生成成功`);
+            const data = ctx2d.getImageData(0,0,w,h).data;
+            const points = [];
+            const gap = 3; // 采样密度
+
+            for(let y=0; y<h; y+=gap) {
+                for(let x=0; x<w; x+=gap) {
+                    const i = (y*w+x)*4;
+                    // 亮度检测
+                    if ((data[i] + data[i+1] + data[i+2])/3 > 50) {
+                        points.push({
+                            x: (x - w/2) / 30, // 缩放到 3D 空间
+                            y: -(y - h/2) / 30, // Y轴反转
+                            z: (Math.random() - 0.5) * 0.5 // 稍微一点厚度
+                        });
+                    }
+                }
+            }
+            createTextParticles(points);
         };
-        img.onerror = () => setStatus("加载失败", true);
         img.src = src;
     }
 
-    function resampleImage() {
-        if (!cachedImageData) return;
-        textParticles = [];
-        const val = parseInt(document.getElementById('densityRange').value);
-        const gap = Math.max(2, 7 - val); 
-        
-        const w = cachedWidth; const h = cachedHeight;
-        for(let y=0; y<h; y+=gap) {
-            for(let x=0; x<w; x+=gap) {
-                const i = (y*w+x)*4;
-                const lum = (cachedImageData[i] + cachedImageData[i+1] + cachedImageData[i+2])/3;
-                if(Math.abs(lum - 128) > 20) {
-                    textParticles.push({
-                        ox: x-w/2 + (Math.random()-0.5)*gap*0.5, 
-                        oy: y-h/2 + (Math.random()-0.5)*gap*0.5 
-                    });
-                }
-            }
+    function createTextParticles(points) {
+        if (textPoints !== null) {
+            textGeometry.dispose();
+            textMaterial.dispose();
+            scene.remove(textPoints);
         }
+
+        const positions = new Float32Array(points.length * 3);
+        const colors = new Float32Array(points.length * 3);
+        const baseColor = new THREE.Color('#ffffff'); // 文字纯白高亮
+
+        for(let i=0; i<points.length; i++) {
+            const i3 = i*3;
+            positions[i3] = points[i].x * 1.5; // 初始缩放
+            positions[i3+1] = points[i].y * 1.5;
+            positions[i3+2] = points[i].z;
+            
+            colors[i3] = 1.0; colors[i3+1] = 1.0; colors[i3+2] = 1.0;
+        }
+
+        textGeometry = new THREE.BufferGeometry();
+        textGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        textGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        textMaterial = new THREE.PointsMaterial({
+            size: 0.05, // 文字粒子要比星系粒子大一点
+            sizeAttenuation: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            vertexColors: true
+        });
+
+        textPoints = new THREE.Points(textGeometry, textMaterial);
+        scene.add(textPoints);
     }
 
-    // --- 3. 渲染循环 ---
-    function animate() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // --- 5. 交互与动画 ---
+    
+    // 初始化
+    generateGalaxy();
+    document.getElementById('loading').style.opacity = 0;
+    setTimeout(() => document.getElementById('loading').remove(), 500);
 
-        // A. 绘制星系盘 (Galaxy Disk)
-        ctx.globalCompositeOperation = 'lighter';
+    // 动画循环
+    const clock = new THREE.Clock();
+
+    function tick() {
+        const elapsedTime = clock.getElapsedTime();
+
+        // 旋转星系
+        if(galaxyPoints) {
+            galaxyPoints.rotation.y = elapsedTime * 0.05;
+        }
         
-        orbitParticles.forEach(p => {
-            p.angle += p.speed;
-            const z = Math.sin(p.angle);
+        // 浮动文字 (如果存在)
+        if(textPoints) {
+            // 始终正对相机
+            textPoints.lookAt(camera.position);
+            // 垂直悬浮
+            textPoints.position.y = Math.sin(elapsedTime * 0.5) * 0.5;
             
-            // 3D 投影计算
-            // 加入 config.orbitY 实现上下移动
-            const x = config.baseX + Math.cos(p.angle) * p.r;
-            const y = (config.baseY + config.orbitY) + Math.sin(p.angle) * p.r * config.orbitTilt + p.yOffset;
-            
-            ctx.beginPath();
-            ctx.arc(x, y, p.size, 0, Math.PI*2);
-            
-            // 颜色计算：核心白亮，边缘金黄，背面变暗
-            // brightness 是距离中心的亮度系数
-            const depth = z > 0 ? 1 : 0.3; // 前后遮挡
-            const alpha = (p.brightness * 0.8 + 0.2) * depth;
-            
-            // 核心区域强制白光
-            if(p.brightness > 0.8) ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            else ctx.fillStyle = config.color; // 外部使用主题色(金)
-            
-            ctx.globalAlpha = alpha;
-            ctx.fill();
-        });
-        ctx.globalAlpha = 1.0;
+            // 动态缩放
+            const scale = document.getElementById('textSize').value;
+            textPoints.scale.set(scale, scale, scale);
+        }
 
-        // B. 绘制文字 (Text)
-        ctx.shadowBlur = config.glow;             
-        ctx.shadowColor = config.color;           
-        ctx.fillStyle = '#FFFFFF'; 
-
-        textParticles.forEach(p => {
-            const tx = config.baseX + (p.ox * config.letterSpacing * config.scale);
-            const ty = config.baseY + (p.oy * config.scale);
-            
-            ctx.beginPath();
-            ctx.arc(tx, ty, config.pSize, 0, Math.PI*2);
-            ctx.fill();
-        });
-        
-        ctx.shadowBlur = 0;
-        ctx.globalCompositeOperation = 'source-over';
-        requestAnimationFrame(animate);
+        controls.update();
+        composer.render(); // 使用后处理渲染
+        requestAnimationFrame(tick);
     }
+    tick();
 
-    // 交互
-    window.runGen = function() {
-        const input = document.getElementById('imageInput');
-        if(!input.files[0]) { setStatus("请选文件", true); return; }
-        const file = input.files[0];
-        const r = new FileReader();
+    // 窗口自适应
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        composer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // UI 事件绑定
+    document.getElementById('btnGen').addEventListener('click', () => {
+        const file = document.getElementById('imageInput').files[0];
+        if(!file) return alert('请选择图片');
+        
+        const reader = new FileReader();
         if(file.type.includes('svg')) {
-            r.readAsText(file);
-            r.onload = e => {
+            reader.readAsText(file);
+            reader.onload = e => {
                 const url = URL.createObjectURL(new Blob([patchSVG(e.target.result)], {type:'image/svg+xml'}));
                 processSource(url);
             };
         } else {
-            r.readAsDataURL(file);
-            r.onload = e => processSource(e.target.result);
+            reader.readAsDataURL(file);
+            reader.onload = e => processSource(e.target.result);
         }
-    };
-
-    window.updateConfig = function(key, val) {
-        if(key === 'zoom') {
-            config.targetScale = val / 100;
-            if(cachedWidth > 0) updateScale();
-        } 
-        else if (key === 'orbitY') { 
-            config.orbitY = parseInt(val); 
-            document.getElementById('val-ypos').innerText = val;
-        }
-        else if (key === 'color') { config.color = val; }
-    };
-
-    window.addEventListener('keydown', e => {
-        if(e.key.toLowerCase() === 'h') document.getElementById('ui').classList.toggle('hidden');
-    });
-    
-    window.addEventListener('wheel', e => {
-        let currentScale = config.targetScale;
-        currentScale += e.deltaY * -0.0005;
-        currentScale = Math.min(Math.max(0.05, currentScale), 1.0);
-        config.targetScale = currentScale;
-        if(cachedWidth > 0) updateScale();
     });
 
-    resize();
-    initOrbit();
-    animate();
+    // 实时更新星系
+    const updateGalaxy = () => {
+        parameters.radius = parseFloat(document.getElementById('galaxySize').value);
+        parameters.count = parseInt(document.getElementById('galaxyCount').value);
+        parameters.insideColor = document.getElementById('colorInside').value;
+        parameters.outsideColor = document.getElementById('colorOutside').value;
+        generateGalaxy();
+    };
+
+    document.getElementById('galaxySize').addEventListener('input', updateGalaxy);
+    document.getElementById('galaxyCount').addEventListener('input', updateGalaxy);
+    document.getElementById('colorInside').addEventListener('input', updateGalaxy);
+    document.getElementById('colorOutside').addEventListener('input', updateGalaxy);
 
 </script>
 </body>
