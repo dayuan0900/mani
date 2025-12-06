@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Void Throne</title>
+    <title>Mani - Sumeru Galaxy</title>
     <style>
         body { 
             margin: 0; overflow: hidden; background: #000; 
@@ -13,91 +13,90 @@
 
         #ui {
             position: absolute; top: 20px; left: 20px; width: 280px;
-            background: rgba(15, 12, 10, 0.9); /* 深褐金背景 */
-            border: 1px solid rgba(255,215,0,0.25);
+            background: rgba(10, 8, 5, 0.85); /* 暖黑背景 */
+            border: 1px solid rgba(255,200,0,0.2);
             border-radius: 12px;
             padding: 15px; color: #fff; z-index: 100;
-            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 60px rgba(0,0,0,0.9);
         }
 
         h3 { 
-            margin: 0 0 10px 0; color: #ffd700; font-size: 14px; 
+            margin: 0 0 10px 0; color: #ffca28; font-size: 14px; 
             letter-spacing: 2px; text-align: center; text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(255,215,0,0.4);
+            text-shadow: 0 0 15px rgba(255,200,0,0.4);
         }
 
         #status {
-            font-size: 10px; color: #aaa; text-align: center; margin-bottom: 12px;
+            font-size: 10px; color: #888; text-align: center; margin-bottom: 12px;
             border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;
             height: 15px; white-space: nowrap; overflow: hidden;
         }
 
         .btn {
             width: 100%; padding: 12px; border: none; border-radius: 4px;
-            background: linear-gradient(135deg, #ffd700, #b8860b);
+            background: linear-gradient(135deg, #ffca28, #ff6f00);
             color: #000; font-weight: bold; cursor: pointer;
             margin-top: 5px; font-size: 12px; letter-spacing: 1px;
         }
-        .btn:hover { filter: brightness(1.1); box-shadow: 0 0 15px rgba(255,215,0,0.3); }
+        .btn:hover { filter: brightness(1.1); box-shadow: 0 0 20px rgba(255,160,0,0.4); }
 
         .control { margin-bottom: 10px; }
-        label { display: flex; justify-content: space-between; font-size: 10px; color: #ccc; margin-bottom: 3px; }
-        input[type="range"] { width: 100%; cursor: pointer; accent-color: #ffd700; height: 2px; }
+        label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 3px; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #ffca28; height: 2px; }
         input[type="file"] { width: 100%; font-size: 10px; color: #888; }
         input[type="color"] { width: 100%; height: 25px; border: none; padding: 0; background: none; }
 
-        .hint { font-size: 9px; color: #666; text-align: center; margin-top: 8px; }
+        .hint { font-size: 9px; color: #555; text-align: center; margin-top: 8px; }
         canvas { display: block; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h3>VOID THRONE</h3>
-    <div id="status">等待指令...</div>
+    <h3>SUMERU GALAXY</h3>
+    <div id="status">系统就绪</div>
     
     <div class="control">
         <label>SOURCE / 源文件</label>
         <input type="file" id="imageInput" accept="image/*,.svg">
-        <button class="btn" onclick="runGen()">ACTIVATE / 激活法座</button>
+        <button class="btn" onclick="runGen()">ACTIVATE / 激活</button>
     </div>
 
     <div style="border-top:1px solid rgba(255,255,255,0.1); margin:12px 0;"></div>
 
-    <!-- 缩放默认值调小，解决“太大”的问题 -->
+    <!-- 文字调节区 -->
     <div class="control">
-        <label>ZOOM / 远近缩放 <span id="val-zoom">30%</span></label>
-        <input type="range" min="5" max="80" value="30" oninput="updateConfig('zoom', this.value)">
+        <label>TEXT SPACING / 字间距 (拉大防粘连)</label>
+        <input type="range" min="100" max="200" value="100" oninput="config.letterSpacing=this.value/100">
+    </div>
+    
+    <div class="control">
+        <label>TEXT DENSITY / 文字密度 (适中)</label>
+        <input type="range" id="densityRange" min="1" max="5" step="1" value="3" oninput="resampleImage()">
+    </div>
+
+    <!-- 光环调节区 -->
+    <div class="control">
+        <label>GALAXY CORE / 星系聚焦 (内密外疏)</label>
+        <input type="range" min="1" max="5" step="0.1" value="2.5" oninput="initOrbit(this.value)">
     </div>
 
     <div class="control">
-        <label>RING Y-POS / 光环上下调节 <span id="val-orbitY">0</span></label>
-        <input type="range" min="-300" max="300" value="0" oninput="updateConfig('orbitY', this.value)">
-    </div>
-
-    <div class="control">
-        <label>RING PARTICLES / 光环粒子数</label>
-        <input type="range" id="ringCount" min="500" max="4000" step="500" value="2500" oninput="initOrbit()">
-    </div>
-
-    <div class="control">
-        <label>TEXT DENSITY / 文字密度</label>
-        <input type="range" id="densityRange" min="1" max="5" step="1" value="4" oninput="resampleImage()">
+        <label>RING PARTICLES / 星系粒子数</label>
+        <input type="range" id="ringCount" min="1000" max="5000" step="500" value="3000" oninput="initOrbit()">
     </div>
 
     <div class="control">
         <label>COLOR / 主题色</label>
-        <input type="color" id="colorPicker" value="#ffd700" oninput="updateConfig('color', this.value)">
+        <input type="color" id="colorPicker" value="#ffca28" oninput="updateConfig('color', this.value)">
     </div>
 
-    <div class="hint">按 <b>H</b> 键隐藏界面</div>
+    <div class="hint">按 <b>H</b> 键隐藏 | 滚轮缩放</div>
 </div>
 
 <canvas id="canvas"></canvas>
 
-<!-- data-cfasync="false" 防止 Cloudflare 干扰 -->
 <script data-cfasync="false">
-    // --- 0. 全局工具 ---
     const statusEl = document.getElementById('status');
     function setStatus(msg, isError=false) {
         statusEl.innerText = msg;
@@ -117,60 +116,65 @@
     let config = {
         baseX: 0, baseY: 0, 
         scale: 1, 
-        targetScale: 0.30, // 【关键】默认缩放设为 30%，这就是“往后退”的效果
-        color: '#ffd700',
+        targetScale: 0.30, 
+        color: '#ffca28', // 金黄色
         pSize: 1.0,      
-        glow: 25,
-        orbitSpeed: 0.015, 
-        orbitY: 0,        
-        orbitTilt: 0.15   
+        glow: 20,
+        orbitSpeed: 0.01, 
+        orbitTilt: 0.2,   
+        letterSpacing: 1.0, // 字间距系数
+        orbitBias: 2.5      // 聚集系数
     };
 
-    // --- 1. 初始化 ---
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         config.baseX = canvas.width / 2;
         config.baseY = canvas.height / 2;
-        
-        // 智能重算缩放：确保文字完整显示
-        if(cachedWidth > 0) {
-            updateScale();
-        }
+        if(cachedWidth > 0) updateScale();
         initOrbit();
     }
     window.addEventListener('resize', resize);
 
     function updateScale() {
-        // 计算适配宽度和高度的最小比例，防止溢出
-        const scaleW = (window.innerWidth * config.targetScale) / cachedWidth;
-        // 限制最大缩放，防止文字太大
-        config.scale = scaleW; 
+        config.scale = (window.innerWidth * config.targetScale) / cachedWidth; 
     }
 
-    // --- 2. 旋绕光环 ---
-    function initOrbit() {
+    // --- 1. 星系涡流系统 (仿图2效果) ---
+    function initOrbit(biasValue) {
+        if(biasValue) config.orbitBias = parseFloat(biasValue);
+        
         orbitParticles = [];
-        const count = parseInt(document.getElementById('ringCount').value) || 2500;
+        const count = parseInt(document.getElementById('ringCount').value) || 3000;
         
         for(let i=0; i<count; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const minR = Math.min(canvas.width, canvas.height) * 0.30; // 光环稍微缩小一点
-            const maxR = Math.min(canvas.width, canvas.height) * 0.95;
-            const r = minR + Math.pow(Math.random(), 1.5) * (maxR - minR);
+            // 核心算法：指数分布
+            // Math.random() 是均匀的。
+            // pow(Math.random(), bias) 会让数字强烈聚集在 0 附近（内圈），少部分在 1 附近（外圈）。
+            const dist = Math.pow(Math.random(), config.orbitBias); 
             
+            const minR = 150; // 内圈核心半径
+            const maxR = Math.max(canvas.width, canvas.height) * 0.8; // 外圈扩散半径
+            const r = minR + dist * (maxR - minR);
+            
+            // 垂直厚度 (Volume)：内圈厚，外圈薄，形成透镜状
+            const volume = (1 - dist) * 60 * (Math.random()-0.5);
+
             orbitParticles.push({
-                angle: angle,
+                angle: Math.random() * Math.PI * 2,
                 r: r,
-                speedBase: (600 / r) * 0.5 + Math.random() * 0.2, 
+                volume: volume, // 垂直高度偏移
+                // 内圈快，外圈慢
+                speed: (500 / r) * 0.0005 + Math.random() * 0.0001,
                 size: Math.random() * 1.5 + 0.5,
-                alpha: Math.random() * 0.6 + 0.2
+                // 内圈亮(1)，外圈暗(0.1)
+                baseAlpha: (1 - dist) * 0.8 + 0.1 
             });
         }
-        setStatus(`法座就绪`);
+        setStatus(`星海粒子: ${count}`);
     }
 
-    // --- 3. 图像引擎 (防裁剪修复版) ---
+    // --- 2. 图像引擎 ---
     function patchSVG(svg) {
         if (!svg.includes('width=') || !svg.includes('height=')) {
             return svg.replace('<svg', '<svg width="1500" height="1500" ');
@@ -181,10 +185,8 @@
     function processSource(src) {
         setStatus("读取中...");
         const img = new Image();
-        
         img.onload = () => {
             setStatus("解析中...");
-            // 使用大画布
             const w = 1500; const h = 1000;
             const off = document.createElement('canvas');
             off.width = w; off.height = h;
@@ -194,26 +196,21 @@
             offCtx.fillRect(0,0,w,h);
             
             const aspect = img.width/img.height||1;
-            
-            // 【关键修复】留白 padding，防止文字贴边被切
-            const padding = 100; // 留出 100px 边距
+            const padding = 150; // 更多留白，防止字间距拉大后溢出
             const drawW = w - padding*2;
             const drawH = h - padding*2;
             
             let dw=drawW, dh=drawW/aspect;
             if(dh > drawH){ dh=drawH; dw=drawH*aspect; }
             
-            // 居中绘制 (考虑 padding)
             offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
             
             cachedImageData = offCtx.getImageData(0,0,w,h).data;
             cachedWidth = w; cachedHeight = h;
             
             resampleImage(); 
-            updateScale(); // 计算初始缩放
-            
-            if(textParticles.length>0) setStatus(`生成成功`);
-            else setStatus("无内容", true);
+            updateScale(); 
+            setStatus(`生成成功`);
         };
         img.onerror = () => setStatus("加载失败", true);
         img.src = src;
@@ -223,7 +220,11 @@
         if (!cachedImageData) return;
         textParticles = [];
         const val = parseInt(document.getElementById('densityRange').value);
-        const gap = Math.max(1, 6 - val);
+        
+        // 密度优化：不再允许太密，强制保留空隙
+        // Val 1 -> Gap 7 (非常稀疏)
+        // Val 5 -> Gap 3 (中等密度，不会糊)
+        const gap = Math.max(3, 8 - val); 
         
         const w = cachedWidth; const h = cachedHeight;
         for(let y=0; y<h; y+=gap) {
@@ -240,14 +241,32 @@
         }
     }
 
-    // --- 4. 渲染循环 ---
+    // --- 3. 渲染循环 ---
     function animate() {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // A. 后景光环
+        // A. 星系光环
         ctx.globalCompositeOperation = 'lighter';
-        drawOrbit(true); 
+        
+        orbitParticles.forEach(p => {
+            p.angle += p.speed;
+            const z = Math.sin(p.angle);
+            
+            // 计算坐标 (加入 volume 垂直厚度)
+            const x = config.baseX + Math.cos(p.angle) * p.r * (window.innerWidth/1600);
+            const y = config.baseY + Math.sin(p.angle) * p.r * config.orbitTilt + p.volume; // 加上体积偏移
+            
+            ctx.beginPath();
+            ctx.arc(x, y, p.size, 0, Math.PI*2);
+            
+            // 深度变暗
+            const alpha = p.baseAlpha * (z > 0 ? 1 : 0.4);
+            ctx.fillStyle = config.color;
+            ctx.globalAlpha = alpha;
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1.0;
 
         // B. 文字主体
         ctx.shadowBlur = config.glow;             
@@ -255,43 +274,22 @@
         ctx.fillStyle = '#FFFFFF'; 
 
         textParticles.forEach(p => {
-            const tx = config.baseX + (p.ox * config.scale);
+            // 字间距算法：
+            // ox 是相对于中心的X坐标。乘以系数即可拉开距离。
+            const tx = config.baseX + (p.ox * config.letterSpacing * config.scale);
             const ty = config.baseY + (p.oy * config.scale);
+            
             ctx.beginPath();
             ctx.arc(tx, ty, config.pSize, 0, Math.PI*2);
             ctx.fill();
         });
-
-        // C. 前景光环
-        ctx.shadowBlur = 0; 
-        drawOrbit(false);
         
+        ctx.shadowBlur = 0;
         ctx.globalCompositeOperation = 'source-over';
         requestAnimationFrame(animate);
     }
 
-    function drawOrbit(isBack) {
-        orbitParticles.forEach(p => {
-            p.angle += config.orbitSpeed * p.speedBase;
-            const z = Math.sin(p.angle);
-            const drawCondition = isBack ? (z < 0) : (z >= 0);
-            
-            if(drawCondition) {
-                const x = config.baseX + Math.cos(p.angle) * p.r * (window.innerWidth/1600);
-                const y = (config.baseY + config.orbitY) + Math.sin(p.angle) * p.r * config.orbitTilt;
-                
-                ctx.beginPath();
-                ctx.arc(x, y, p.size, 0, Math.PI*2);
-                const alpha = p.alpha * (z > 0 ? 1 : 0.3);
-                ctx.fillStyle = config.color;
-                ctx.globalAlpha = alpha;
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
-            }
-        });
-    }
-
-    // --- 5. 交互绑定 (修复报错点) ---
+    // 交互
     window.runGen = function() {
         const input = document.getElementById('imageInput');
         if(!input.files[0]) { setStatus("请选文件", true); return; }
@@ -310,19 +308,12 @@
     };
 
     window.updateConfig = function(key, val) {
-        // 【关键修复】增加安全检查，防止找不到元素报错
         if(key === 'zoom') {
             config.targetScale = val / 100;
-            const el = document.getElementById('val-zoom');
-            if(el) el.innerText = val + '%';
             if(cachedWidth > 0) updateScale();
-        } 
-        else if (key === 'orbitY') { 
-            config.orbitY = parseInt(val); 
-            const el = document.getElementById('val-orbitY');
-            if(el) el.innerText = val;
+        } else {
+            config[key] = key === 'color' ? val : parseFloat(val);
         }
-        else if (key === 'color') { config.color = val; }
     };
 
     window.addEventListener('keydown', e => {
@@ -334,15 +325,11 @@
         currentScale += e.deltaY * -0.0005;
         currentScale = Math.min(Math.max(0.05, currentScale), 1.0);
         config.targetScale = currentScale;
-        
-        const el = document.getElementById('val-zoom');
-        if(el) el.innerText = Math.round(currentScale*100) + '%';
-        
         if(cachedWidth > 0) updateScale();
     });
 
     resize();
-    initOrbit();
+    initOrbit(); // 默认启动
     animate();
 
 </script>
