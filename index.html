@@ -3,172 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mani - Nuclear Fix</title>
+    <!-- 1. 显式声明允许内联脚本执行 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
+    <title>Mani - Final System</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: monospace; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', monospace; }
         
         #ui {
-            position: absolute; top: 10px; left: 10px; width: 260px;
-            background: rgba(30, 30, 30, 0.9); border: 1px solid #555;
+            position: absolute; top: 10px; left: 10px; width: 280px;
+            background: rgba(10, 15, 20, 0.95);
+            border: 1px solid #444; border-radius: 8px;
             padding: 15px; color: #fff; z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
-        /* 显眼的日志框 */
+        /* 状态灯：红=未启动，绿=已启动 */
+        #status-light {
+            display: inline-block; width: 10px; height: 10px; 
+            background: #f00; border-radius: 50%; margin-right: 5px;
+            box-shadow: 0 0 5px #f00;
+        }
+
         #console {
-            height: 80px; background: #000; color: #0f0; 
-            overflow-y: scroll; border: 1px solid #333; 
-            margin-bottom: 10px; padding: 5px; font-size: 10px;
+            height: 100px; background: #050505; color: #0f0; 
+            overflow-y: auto; border: 1px solid #333; 
+            margin-bottom: 15px; padding: 8px; font-size: 11px;
+            font-family: monospace; line-height: 1.4;
         }
 
-        button {
-            width: 100%; padding: 15px; margin-top: 5px; cursor: pointer;
-            font-weight: bold; font-size: 14px; border: none;
-        }
-        .btn-go { background: #00e5ff; color: #000; }
-        .btn-go:active { background: #fff; }
-        .btn-test { background: #555; color: #fff; font-size: 12px; padding: 8px;}
+        .control-group { margin-bottom: 12px; }
+        label { display: block; color: #aaa; font-size: 11px; margin-bottom: 4px; }
 
-        input { width: 100%; margin-bottom: 5px; }
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 4px;
+            font-weight: bold; cursor: pointer; margin-top: 5px;
+            font-size: 13px; text-transform: uppercase;
+            transition: 0.2s;
+        }
+        #btn-gen { background: linear-gradient(90deg, #00e5ff, #0099ff); color: #000; }
+        #btn-gen:hover { box-shadow: 0 0 15px #00e5ff; }
+        #btn-test { background: #333; color: #ccc; font-size: 11px; padding: 8px; }
+
+        input[type="file"] { width: 100%; font-size: 11px; color: #fff; }
+        input[type="range"] { width: 100%; accent-color: #00e5ff; }
+
         canvas { display: block; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <div id="console">等待 JS 加载...</div>
+    <div style="margin-bottom:10px; font-size:12px; color:#fff; display:flex; align-items:center;">
+        <span id="status-light"></span> 系统状态监控
+    </div>
     
-    <label>1. 上传文件</label>
-    <input type="file" id="fInput">
+    <!-- 日志框 -->
+    <div id="console">HTML已加载...<br>等待JS引擎启动...</div>
     
-    <!-- 使用最原始的 onclick，确保 100% 触发 -->
-    <button class="btn-go" onclick="runImage()">⚡ 强制生成 (点击)</button>
-    <button class="btn-test" onclick="runTest()">🛠️ 生成测试图</button>
+    <div class="control-group">
+        <label>1. 上传文件 (SVG/PNG)</label>
+        <input type="file" id="imageInput" accept="image/*,.svg">
+    </div>
+
+    <button id="btn-gen" class="btn">⚡ 激活粒子系统</button>
+    <button id="btn-test" class="btn">🛠️ 生成测试图 (Debug)</button>
+
+    <div style="border-top:1px solid #333; margin:15px 0;"></div>
+
+    <div class="control-group">
+        <label>粒子大小 (Size)</label>
+        <input type="range" id="sizeRange" min="1" max="5" step="0.5" value="3">
+    </div>
     
-    <div style="margin-top:10px; font-size:10px; color:#aaa;">
-        粒子大小: <input type="range" id="sz" min="1" max="5" value="3" oninput="cfg.size=this.value">
-        光效颜色: <input type="color" value="#00e5ff" oninput="cfg.color=this.value">
+    <div class="control-group">
+        <label>光效颜色 (Color)</label>
+        <input type="color" id="colorPicker" value="#00e5ff" style="width:100%; border:none; height:25px;">
     </div>
 </div>
 
-<canvas id="c"></canvas>
+<canvas id="canvas"></canvas>
 
-<script>
-    // --- 0. 全局错误捕获 (最优先) ---
-    const logBox = document.getElementById('console');
-    function log(msg) {
-        logBox.innerHTML = "> " + msg + "<br>" + logBox.innerHTML;
-        console.log(msg);
-    }
-    window.onerror = function(msg, url, line) {
-        alert("JS 严重错误: " + msg);
-        log("ERROR: " + msg);
-    };
-
-    log("JS 已加载。准备就绪。");
-
-    // --- 1. 引擎初始化 ---
-    const canvas = document.getElementById('c');
-    const ctx = canvas.getContext('2d');
-    
-    let particles = [];
-    let cfg = { color: '#00e5ff', size: 3, w: 0, h: 0 };
-
-    function resize() {
-        cfg.w = canvas.width = window.innerWidth;
-        cfg.h = canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // --- 2. 核心逻辑 (暴露在全局 window 下) ---
-
-    // 绘制测试图
-    window.runTest = function() {
-        log("正在生成测试图...");
-        processData(null, true); // true = 使用内置测试数据
-    };
-
-    // 处理图片
-    window.runImage = function() {
-        // 1. 立即弹窗测试，确保按钮是活的
-        log("按钮被点击！开始处理...");
+<!-- 2. data-cfasync="false" 防止 Cloudflare Rocket Loader 干扰脚本执行 -->
+<script data-cfasync="false">
+    // 使用 load 事件确保页面完全加载后再执行逻辑，防止找不到元素报错
+    window.addEventListener('load', function() {
         
-        const input = document.getElementById('fInput');
-        if (!input.files || !input.files[0]) {
-            alert("请先选择图片文件！");
-            log("失败: 未选择文件");
-            return;
+        // --- 基础初始化 ---
+        const logBox = document.getElementById('console');
+        const statusLight = document.getElementById('status-light');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 激活状态灯
+        statusLight.style.background = '#0f0';
+        statusLight.style.boxShadow = '0 0 10px #0f0';
+        
+        function log(msg, type='info') {
+            const line = document.createElement('div');
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            line.textContent = `[${time}] ${msg}`;
+            if(type === 'error') line.style.color = '#ff5555';
+            logBox.insertBefore(line, logBox.firstChild);
+            console.log(msg);
         }
 
-        const file = input.files[0];
-        log("读取: " + file.name);
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
-                processImageObj(img);
-            };
-            img.onerror = function() {
-                alert("图片加载失败 (Image Load Error)");
-            };
-            img.src = e.target.result;
+        // 捕获全局错误
+        window.onerror = function(msg) { log("System Error: " + msg, 'error'); };
+
+        log("✅ JS引擎已启动");
+        log("等待用户操作...");
+
+        // --- 配置与变量 ---
+        let particles = [];
+        let nebula = [];
+        let config = {
+            baseX: 0, baseY: 0, scale: 1,
+            color: '#00e5ff',
+            pSize: 3,
+            waveAmp: 20,
+            waveSpeed: 0.002
         };
-        reader.readAsDataURL(file);
-    };
 
-    function processImageObj(img) {
-        log(`图片尺寸: ${img.width}x${img.height}`);
-        
-        // 强制离屏渲染
-        const w = 800; 
-        const h = 600;
-        const off = document.createElement('canvas');
-        off.width = w; off.height = h;
-        const ctx2 = off.getContext('2d');
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            config.baseX = canvas.width / 2;
+            config.baseY = canvas.height / 2;
+            initNebula();
+        }
+        window.addEventListener('resize', resize);
 
-        // 铺灰底 (关键)
-        ctx2.fillStyle = '#808080';
-        ctx2.fillRect(0, 0, w, h);
-
-        // 绘制
-        const aspect = img.width / img.height || 1;
-        let dw = w, dh = w / aspect;
-        if(dh > h) { dh = h; dw = h * aspect; }
-        ctx2.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
-
-        // 采样
-        const imgData = ctx2.getImageData(0, 0, w, h);
-        processData(imgData, false);
-    }
-
-    function processData(imgData, isTest) {
-        particles = [];
-        
-        if (isTest) {
-            // 生成一个简单的 TEST 矩阵
-            for(let y=200; y<400; y+=5) {
-                for(let x=200; x<600; x+=5) {
-                    particles.push({
-                        x: x + (Math.random()-0.5)*2,
-                        y: y + (Math.random()-0.5)*2,
-                        ox: x, oy: y,
-                        vx: 0, vy: 0
-                    });
-                }
+        // --- 星云背景 ---
+        function initNebula() {
+            nebula = [];
+            for(let i=0; i<40; i++) {
+                nebula.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    r: Math.random() * 150 + 50,
+                    vx: (Math.random()-0.5)*0.2,
+                    vy: (Math.random()-0.5)*0.2,
+                    hue: Math.random()>0.5 ? 190 : 280,
+                    alpha: 0
+                });
             }
-            log("测试粒子已生成");
-        } else {
-            // 真实的像素扫描
-            const data = imgData.data;
-            const w = imgData.width;
-            const h = imgData.height;
-            const gap = 3; 
+        }
 
-            for(let y=0; y<h; y+=gap) {
-                for(let x=0; x<w; x+=gap) {
-                    const i = (y*w + x)*4;
-                    const lum = (data[i] + data[i+1] + data[i+2]) / 3;
-                    
-                    // 边缘检测
-                    if(x+gap < w) {
+        // --- 粒子类 ---
+        class Particle {
+            constructor(x, y) {
+                this.ox = x; this.oy = y;
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = 0; this.vy = 0;
+                this.waveOffset = x * 0.01 + y * 0.01;
+            }
+            update(time) {
+                const wx = Math.sin(time * config.waveSpeed + this.waveOffset) * (config.waveAmp * 0.3);
+                const wy = Math.cos(time * config.waveSpeed * 1.2 + this.waveOffset) * config.waveAmp;
+                const tx = config.baseX + (this.ox * config.scale) + wx;
+                const ty = config.baseY + (this.oy * config.scale) + wy;
+                
+                this.vx += (tx - this.x) * 0.08;
+                this.vy += (ty - this.y) * 0.08;
+                this.x += this.vx; this.y += this.vy;
+                this.vx *= 0.85; this.vy *= 0.85;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, config.pSize, 0, Math.PI*2);
+                ctx.fillStyle = config.color;
+                ctx.fill();
+            }
+        }
+
+        // --- 图像处理引擎 ---
+        function processSource(imgSrc) {
+            log("开始加载图像资源...");
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            
+            img.onload = () => {
+                log(`图像加载完成: ${img.width}x${img.height}`);
+                
+                // 1. 强制重绘 (解决 SVG 问题)
+                const w = 800;
+                const h = 600;
+                const off = document.createElement('canvas');
+   
