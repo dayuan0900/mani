@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Bright Neon</title>
+    <title>Mani - Elegant Lite</title>
     <style>
         body { 
             margin: 0; overflow: hidden; background: #000; 
@@ -12,44 +12,43 @@
         }
 
         #ui {
-            position: absolute; top: 20px; left: 20px; width: 280px;
-            background: rgba(10, 16, 25, 0.8);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 16px;
-            padding: 20px; color: #fff; z-index: 100;
-            box-shadow: 0 10px 50px rgba(0,0,0,0.6);
+            position: absolute; top: 20px; left: 20px; width: 260px;
+            background: rgba(10, 16, 25, 0.7); /* 更轻薄的背景 */
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px; color: #fff; z-index: 100;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.5);
             transition: 0.3s;
         }
         
         .hidden { opacity: 0; pointer-events: none; transform: translateX(-30px); }
 
         h3 { 
-            margin: 0 0 15px 0; color: #fff; font-size: 14px; 
+            margin: 0 0 12px 0; color: #fff; font-size: 13px; 
             letter-spacing: 3px; text-align: center; text-transform: uppercase;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
-            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;
         }
 
-        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-group { display: flex; gap: 8px; margin-top: 8px; }
         .btn {
-            flex: 1; padding: 10px; border: none; border-radius: 6px;
+            flex: 1; padding: 8px; border: none; border-radius: 4px;
             font-weight: bold; cursor: pointer; font-size: 11px;
             color: white; transition: 0.2s;
         }
         .btn-primary { background: linear-gradient(135deg, #00c6ff, #0072ff); }
-        .btn-primary:hover { box-shadow: 0 0 15px rgba(0,198,255,0.6); filter: brightness(1.2); }
+        .btn-primary:hover { box-shadow: 0 0 10px rgba(0,198,255,0.5); }
         
         .btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
         .btn-secondary:hover { background: rgba(255,255,255,0.2); }
 
-        .control { margin-bottom: 12px; }
-        label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 4px; letter-spacing: 1px; }
-        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; height: 3px; }
-        input[type="color"] { width: 100%; border: none; height: 25px; padding: 0; background: none; cursor: pointer; }
+        .control { margin-bottom: 10px; }
+        label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 3px; letter-spacing: 1px; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; height: 2px; }
+        input[type="color"] { width: 100%; border: none; height: 20px; padding: 0; background: none; cursor: pointer; }
         input[type="file"] { width: 100%; font-size: 10px; color: #888; }
 
-        .hint { font-size: 9px; color: #667; text-align: center; margin-top: 10px; }
+        .hint { font-size: 9px; color: #667; text-align: center; margin-top: 8px; }
         
         canvas { display: block; }
     </style>
@@ -57,7 +56,7 @@
 <body>
 
 <div id="ui">
-    <h3>BRIGHT NEON</h3>
+    <h3>ELEGANT LITE</h3>
     
     <div class="control">
         <label>SOURCE / 源文件</label>
@@ -65,29 +64,30 @@
     </div>
     
     <div class="btn-group">
-        <button class="btn btn-primary" onclick="runGen()">ACTIVATE / 激活</button>
-        <button class="btn btn-secondary" onclick="toggleVortex()">🌌 VORTEX / 旋绕</button>
+        <button class="btn btn-primary" onclick="runGen()">ACTIVATE</button>
+        <button class="btn btn-secondary" onclick="toggleVortex()">VORTEX</button>
     </div>
 
-    <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
+    <div style="margin: 12px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
 
+    <!-- 新增缩放控制 -->
     <div class="control">
-        <label>GLOW / 光晕 (拉大更亮) <span id="val-glow">30</span></label>
-        <input type="range" min="0" max="60" value="30" oninput="updateConfig('glow', this.value)">
+        <label>ZOOM / 缩放 (大小) <span id="val-zoom">40%</span></label>
+        <input type="range" min="10" max="100" value="40" oninput="updateConfig('zoom', this.value)">
     </div>
 
     <div class="control">
-        <label>DENSITY / 粒子数量</label>
+        <label>DENSITY / 粒子密度 (性能)</label>
         <input type="range" id="densityRange" min="1" max="5" step="1" value="2" oninput="resampleImage()">
     </div>
 
     <div class="control">
-        <label>SIZE / 粒子粗细</label>
-        <input type="range" min="0.5" max="3" step="0.1" value="1.0" oninput="updateConfig('pSize', this.value)">
+        <label>GLOW / 光晕强度</label>
+        <input type="range" min="0" max="50" value="25" oninput="updateConfig('glow', this.value)">
     </div>
 
     <div class="control">
-        <label>COLOR / 霓虹色</label>
+        <label>COLOR / 主题色</label>
         <input type="color" id="colorPicker" value="#00e5ff" oninput="updateConfig('color', this.value)">
     </div>
 
@@ -107,11 +107,13 @@
     let cachedHeight = 0;
 
     let config = {
-        baseX: 0, baseY: 0, scale: 1,
+        baseX: 0, baseY: 0, 
+        scale: 1,        // 最终渲染缩放
+        targetScale: 0.4, // 目标占比 (0.4 = 40% 屏幕宽度)
         color: '#00e5ff',
-        pSize: 1.0,      
-        glow: 30,        
-        waveAmp: 6,      
+        pSize: 1.2,      
+        glow: 25,        
+        waveAmp: 5,      
         waveSpeed: 0.002,
         vortexOn: true   
     };
@@ -121,14 +123,19 @@
         canvas.height = window.innerHeight;
         config.baseX = canvas.width / 2;
         config.baseY = canvas.height / 2;
+        
+        // 窗口大小改变时，重新计算缩放
+        if (cachedWidth > 0) {
+            config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
+        }
         initVortex();
     }
     window.addEventListener('resize', resize);
 
-    // --- 1. 背景旋绕系统 ---
+    // --- 1. 背景旋绕 (轻量化) ---
     function initVortex() {
         vortexParticles = [];
-        const count = 1000;
+        const count = 600; // 减少数量，提升性能 (之前是1200)
         for(let i=0; i<count; i++) {
             vortexParticles.push(new VortexParticle());
         }
@@ -138,14 +145,15 @@
         constructor() { this.reset(); }
         reset() {
             this.angle = Math.random() * Math.PI * 2;
-            this.radius = Math.random() * (Math.max(canvas.width, canvas.height) * 0.8);
-            this.speed = (Math.random() * 0.001 + 0.0005) * (Math.random()>0.5 ? 1 : -1);
+            // 让背景分布更广一些，包围文字
+            this.radius = Math.random() * (Math.max(canvas.width, canvas.height) * 0.9);
+            this.speed = (Math.random() * 0.001 + 0.0002) * (Math.random()>0.5 ? 1 : -1);
             this.size = Math.random() * 2;
-            this.alpha = Math.random() * 0.5;
+            this.alpha = Math.random() * 0.4;
         }
         update() {
             this.angle += this.speed;
-            this.radius += Math.sin(Date.now() * 0.001 + this.angle) * 0.2;
+            this.radius += Math.sin(Date.now() * 0.0005 + this.angle) * 0.1;
         }
         draw() {
             const x = config.baseX + Math.cos(this.angle) * this.radius;
@@ -153,9 +161,10 @@
             
             ctx.beginPath();
             ctx.arc(x, y, this.size, 0, Math.PI*2);
-            const distRatio = Math.min(1, this.radius / (canvas.width/2));
-            const alpha = this.alpha * (1 - distRatio) + 0.05;
-            // 背景粒子使用淡色，不抢主体风头
+            // 边缘渐隐
+            const distRatio = Math.min(1, this.radius / (canvas.width));
+            const alpha = this.alpha * (1 - distRatio * 0.5);
+            
             ctx.fillStyle = `rgba(180, 220, 255, ${alpha})`;
             ctx.fill();
         }
@@ -167,10 +176,11 @@
         else vortexParticles = [];
     }
 
-    // --- 2. 图像引擎 (修正版) ---
+    // --- 2. 图像引擎 (轻量采样) ---
     function patchSVG(svg) {
         if (!svg.includes('width=') || !svg.includes('height=')) {
-            return svg.replace('<svg', '<svg width="2000" height="2000" ');
+            // 降级采样分辨率到 1200，保证流畅度
+            return svg.replace('<svg', '<svg width="1200" height="1200" ');
         }
         return svg;
     }
@@ -179,7 +189,8 @@
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = () => {
-            const w = 2000; const h = 1500;
+            // 性能平衡点：1000px 宽度
+            const w = 1000; const h = 800;
             const off = document.createElement('canvas');
             off.width = w; off.height = h;
             const offCtx = off.getContext('2d');
@@ -196,7 +207,8 @@
             cachedWidth = w; cachedHeight = h;
             
             resampleImage(); 
-            config.scale = (window.innerWidth * 0.75) / w; 
+            // 初始缩放设为中景 (40%)
+            config.scale = (window.innerWidth * config.targetScale) / w; 
         };
         img.src = src;
     }
@@ -205,7 +217,10 @@
         if (!cachedImageData) return;
         textParticles = [];
         const gapVal = parseInt(document.getElementById('densityRange').value);
-        const gap = Math.max(2, 10 - gapVal * 2); 
+        
+        // 增加采样间距，大幅减少粒子数
+        // 滑块 1 -> gap 8; 滑块 5 -> gap 3
+        const gap = Math.max(3, 9 - gapVal); 
         
         const w = cachedWidth; const h = cachedHeight;
         for(let y=0; y<h; y+=gap) {
@@ -225,9 +240,9 @@
         }
     }
 
-    // --- 3. 渲染循环 (高亮修正) ---
+    // --- 3. 渲染循环 ---
     function animate() {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; // 保持一定拖尾
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const time = Date.now() * 0.001;
@@ -238,14 +253,11 @@
             vortexParticles.forEach(p => { p.update(); p.draw(); });
         }
 
-        // B. 主体文字 (亮核修正)
-        ctx.globalCompositeOperation = 'lighter'; // 叠加模式
-        ctx.shadowBlur = config.glow;             // 光晕
-        ctx.shadowColor = config.color;           // 光晕颜色
-        
-        // 【关键修改】核心颜色强制为白色 (White Core)
-        // 这样无论光晕多大，中心永远最亮，不会变暗
-        ctx.fillStyle = '#FFFFFF'; 
+        // B. 文字
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.shadowBlur = config.glow;             
+        ctx.shadowColor = config.color;           
+        ctx.fillStyle = '#FFFFFF'; // 白核
 
         textParticles.forEach(p => {
             const wx = Math.sin(time + p.offset) * config.waveAmp;
@@ -257,7 +269,7 @@
             p.vx += (tx - p.x) * 0.1;
             p.vy += (ty - p.y) * 0.1;
             p.x += p.vx; p.y += p.vy;
-            p.vx *= 0.8; p.vy *= 0.8;
+            p.vx *= 0.85; p.vy *= 0.85;
 
             ctx.beginPath();
             ctx.arc(p.x, p.y, config.pSize, 0, Math.PI*2);
@@ -288,22 +300,37 @@
     };
 
     window.updateConfig = function(key, val) {
-        config[key] = parseFloat(val);
-        if(key === 'glow') document.getElementById('val-glow').innerText = val;
+        if(key === 'zoom') {
+            config.targetScale = val / 100;
+            document.getElementById('val-zoom').innerText = val + '%';
+            if(cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
+        } else {
+            config[key] = key === 'color' ? val : parseFloat(val);
+        }
     };
     
     window.toggleVortex = function() {
         config.vortexOn = !config.vortexOn;
         if(config.vortexOn) initVortex();
+        else vortexParticles = [];
     };
 
     window.addEventListener('keydown', e => {
         if(e.key.toLowerCase() === 'h') document.getElementById('ui').classList.toggle('hidden');
     });
     
+    // 鼠标滚轮缩放
     window.addEventListener('wheel', e => {
-        config.scale += e.deltaY * -0.001;
-        if(config.scale < 0.1) config.scale = 0.1;
+        const zoomRange = document.getElementById('val-zoom');
+        let currentScale = config.targetScale;
+        currentScale += e.deltaY * -0.0005;
+        currentScale = Math.min(Math.max(0.1, currentScale), 1.0);
+        
+        config.targetScale = currentScale;
+        if(cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
+        
+        // 更新UI显示
+        // 注意：这里不做太复杂的双向绑定，以免卡顿
     });
 
     resize();
