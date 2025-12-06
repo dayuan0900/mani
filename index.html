@@ -4,58 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Hyper Speed</title>
+    <title>Mani - Titanium Ring</title>
     <style>
         body { 
             margin: 0; overflow: hidden; background: #000; 
-            font-family: 'Segoe UI', sans-serif; user-select: none; 
+            font-family: 'Segoe UI', monospace; user-select: none; 
         }
 
         #ui {
-            position: absolute; top: 20px; left: 20px; width: 260px;
-            background: rgba(10, 10, 10, 0.85);
-            border: 1px solid rgba(255,215,0,0.3); /* 金色边框 */
+            position: absolute; top: 20px; left: 20px; width: 280px;
+            background: rgba(15, 15, 20, 0.9);
+            border: 1px solid rgba(255,215,0,0.3); /* 金边 */
             border-radius: 12px;
-            padding: 20px; color: #fff; z-index: 100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            padding: 15px; color: #fff; z-index: 100;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
         }
-        
-        .hidden { opacity: 0; pointer-events: none; transform: translateX(-30px); }
 
         h3 { 
             margin: 0 0 10px 0; color: #ffd700; font-size: 14px; 
             letter-spacing: 2px; text-align: center; text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(255,215,0,0.5);
         }
 
-        #fps-counter {
-            font-size: 9px; color: #666; text-align: right; margin-bottom: 5px;
+        /* 状态栏：这次加上它，方便排查 */
+        #status {
+            font-size: 10px; color: #0f0; text-align: center; margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;
+            height: 15px; overflow: hidden;
         }
 
         .btn {
             width: 100%; padding: 12px; border: none; border-radius: 4px;
-            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
             color: #000; font-weight: bold; cursor: pointer;
-            transition: 0.2s; font-size: 12px;
+            margin-top: 5px; font-size: 12px;
         }
-        .btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px #ffd700; }
+        .btn:hover { filter: brightness(1.1); box-shadow: 0 0 15px rgba(255,215,0,0.4); }
 
-        .control { margin-bottom: 12px; }
-        label { display: flex; justify-content: space-between; font-size: 10px; color: #ccc; margin-bottom: 4px; letter-spacing: 1px; }
+        .control { margin-bottom: 10px; }
+        label { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-bottom: 3px; }
         input[type="range"] { width: 100%; cursor: pointer; accent-color: #ffd700; height: 3px; }
-        input[type="color"] { width: 100%; border: none; height: 25px; padding: 0; background: none; cursor: pointer; }
         input[type="file"] { width: 100%; font-size: 10px; color: #888; }
+        input[type="color"] { width: 100%; height: 25px; border: none; padding: 0; background: none; }
 
-        .hint { font-size: 9px; color: #555; text-align: center; margin-top: 10px; }
-        
+        .hint { font-size: 9px; color: #555; text-align: center; margin-top: 8px; }
         canvas { display: block; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h3>HYPER SPEED RING</h3>
-    <div id="fps-counter">FPS: 60</div>
+    <h3>TITANIUM RING</h3>
+    <div id="status">系统初始化...</div>
     
     <div class="control">
         <label>SOURCE / 源文件</label>
@@ -63,22 +62,22 @@
         <button class="btn" onclick="runGen()">ACTIVATE / 启动</button>
     </div>
 
-    <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
+    <div style="border-top:1px solid #333; margin:12px 0;"></div>
 
-    <!-- 速度滑块：上限调高了5倍 -->
+    <!-- 新功能区 -->
     <div class="control">
-        <label>ORBIT SPEED / 旋绕速度 (极速)</label>
-        <input type="range" id="speedRange" min="0" max="100" value="40" oninput="config.orbitSpeed=this.value*0.0005">
+        <label>RING Y-POS / 光环上下调节 <span id="val-ypos">0</span></label>
+        <input type="range" min="-300" max="300" value="0" oninput="updateConfig('orbitY', this.value)">
     </div>
 
     <div class="control">
-        <label>RING VERTICAL POS / 光环上下位置</label>
-        <input type="range" min="-300" max="300" value="0" oninput="config.orbitYOffset=parseInt(this.value)">
+        <label>RING SPEED / 旋绕速度</label>
+        <input type="range" min="0" max="100" value="30" oninput="updateConfig('speed', this.value)">
     </div>
 
     <div class="control">
-        <label>RING PARTICLES / 光环粒子数</label>
-        <input type="range" id="ringCount" min="500" max="4000" step="100" value="2500" oninput="initOrbit()">
+        <label>RING DENSITY / 光环粒子数</label>
+        <input type="range" id="ringCount" min="500" max="4000" step="500" value="2500" oninput="initOrbit()">
     </div>
 
     <div class="control">
@@ -91,73 +90,247 @@
         <input type="color" id="colorPicker" value="#ffd700" oninput="updateConfig('color', this.value)">
     </div>
 
-    <div class="hint">按 <b>H</b> 键隐藏界面</div>
+    <div class="hint">按 <b>H</b> 键隐藏 | 滚轮缩放</div>
 </div>
 
 <canvas id="canvas"></canvas>
 
+<!-- 加上 data-cfasync="false" 防止干扰 -->
 <script data-cfasync="false">
-    // --- 0. 基础设置 ---
+    // --- 0. 全局工具 ---
+    const statusEl = document.getElementById('status');
+    function setStatus(msg, isError=false) {
+        statusEl.innerText = msg;
+        statusEl.style.color = isError ? '#ff5555' : '#0f0';
+        console.log(msg);
+    }
+    window.onerror = function(msg) { setStatus("Err: " + msg, true); };
+
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const fpsEl = document.getElementById('fps-counter');
     
     let textParticles = [];
-    let orbitParticles = []; 
-    let cachedImageData = null; 
-    let cachedWidth = 0;
+    let orbitParticles = [];
+    let cachedImageData = null;
+    let cachedWidth = 0; 
     let cachedHeight = 0;
-    let lastTime = 0;
 
     let config = {
         baseX: 0, baseY: 0, 
-        scale: 1,        
-        targetScale: 0.40, 
-        color: '#ffd700', 
+        scale: 1, targetScale: 0.45,
+        color: '#ffd700',
         pSize: 1.0,      
-        glow: 25,        
-        orbitSpeed: 0.02, // 默认速度调快
-        orbitYOffset: 0,  // 光环上下偏移
+        glow: 25,
+        orbitSpeed: 0.015, 
+        orbitY: 0,        // 光环上下偏移
         orbitTilt: 0.15   // 扁平度
     };
 
+    // --- 1. 初始化 ---
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         config.baseX = canvas.width / 2;
         config.baseY = canvas.height / 2;
-        if (cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
+        if(cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
         initOrbit();
     }
     window.addEventListener('resize', resize);
 
-    // --- 1. 高速光环系统 ---
+    // --- 2. 旋绕光环 (High Performance) ---
     function initOrbit() {
         orbitParticles = [];
-        const count = parseInt(document.getElementById('ringCount').value);
-        for(let i=0; i<count; i++) orbitParticles.push(new OrbitParticle());
+        const count = parseInt(document.getElementById('ringCount').value) || 2500;
+        
+        for(let i=0; i<count; i++) {
+            // 环带分布算法
+            const angle = Math.random() * Math.PI * 2;
+            const minR = Math.min(canvas.width, canvas.height) * 0.35;
+            const maxR = Math.min(canvas.width, canvas.height) * 0.95;
+            // 偏向内圈分布，更亮
+            const r = minR + Math.pow(Math.random(), 1.5) * (maxR - minR);
+            
+            orbitParticles.push({
+                angle: angle,
+                r: r,
+                // 内圈快外圈慢
+                speedBase: (600 / r) * 0.5 + Math.random() * 0.2, 
+                size: Math.random() * 1.5 + 0.5,
+                alpha: Math.random() * 0.6 + 0.2
+            });
+        }
+        setStatus(`背景就绪: ${count} 粒子`);
     }
 
-    class OrbitParticle {
-        constructor() { this.reset(); }
-        
-        reset() {
-            this.angle = Math.random() * Math.PI * 2;
-            
-            // 半径分布优化：更宽阔的环带
-            const minR = Math.min(canvas.width, canvas.height) * 0.3;
-            const maxR = Math.min(canvas.width, canvas.height) * 1.0;
-            // 指数分布，让粒子更多聚集在内圈附近，显得更亮
-            const rFactor = Math.pow(Math.random(), 2); 
-            this.radius = minR + rFactor * (maxR - minR);
-            
-            // 速度：内圈快，外圈慢 (开普勒定律模拟)
-            this.speedFactor = (500 / this.radius) * 0.5 + Math.random() * 0.1;
-            
-            this.size = Math.random() * 1.8 + 0.5;
-            this.alpha = Math.random() * 0.7 + 0.3;
+    // --- 3. 图像引擎 (Robust Version) ---
+    function patchSVG(svg) {
+        if (!svg.includes('width=') || !svg.includes('height=')) {
+            return svg.replace('<svg', '<svg width="1500" height="1500" ');
         }
+        return svg;
+    }
 
-        update() {
-            // 速度 = 基础倍率 * 个体因子
-     
+    function processSource(src) {
+        setStatus("读取中...");
+        const img = new Image();
+        // 移除 crossOrigin，防止本地报错
+        
+        img.onload = () => {
+            setStatus("解析中...");
+            const w = 1500; const h = 1000;
+            const off = document.createElement('canvas');
+            off.width = w; off.height = h;
+            const offCtx = off.getContext('2d');
+            
+            offCtx.fillStyle = '#808080';
+            offCtx.fillRect(0,0,w,h);
+            
+            const aspect = img.width/img.height||1;
+            let dw=w, dh=w/aspect;
+            if(dh>h){ dh=h; dw=h*aspect; }
+            offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
+            
+            cachedImageData = offCtx.getImageData(0,0,w,h).data;
+            cachedWidth = w; cachedHeight = h;
+            
+            resampleImage(); 
+            config.scale = (window.innerWidth * config.targetScale) / w; 
+            
+            if(textParticles.length>0) setStatus(`成功: ${textParticles.length} 点`);
+            else setStatus("无内容 (请检查对比度)", true);
+        };
+        img.onerror = () => setStatus("图片加载失败", true);
+        img.src = src;
+    }
+
+    function resampleImage() {
+        if (!cachedImageData) return;
+        textParticles = [];
+        const val = parseInt(document.getElementById('densityRange').value);
+        const gap = Math.max(1, 6 - val); // 密度调节
+        
+        const w = cachedWidth; const h = cachedHeight;
+        for(let y=0; y<h; y+=gap) {
+            for(let x=0; x<w; x+=gap) {
+                const i = (y*w+x)*4;
+                const lum = (cachedImageData[i] + cachedImageData[i+1] + cachedImageData[i+2])/3;
+                if(Math.abs(lum - 128) > 20) {
+                    textParticles.push({
+                        ox: x-w/2 + (Math.random()-0.5)*gap*0.5, 
+                        oy: y-h/2 + (Math.random()-0.5)*gap*0.5 
+                    });
+                }
+            }
+        }
+    }
+
+    // --- 4. 渲染循环 ---
+    function animate() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; // 较短拖尾，清晰度高
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // A. 后景光环 (遮挡关系)
+        ctx.globalCompositeOperation = 'lighter';
+        drawOrbit(true); // Draw back
+
+        // B. 文字主体
+        ctx.shadowBlur = config.glow;             
+        ctx.shadowColor = config.color;           
+        ctx.fillStyle = '#FFFFFF'; 
+
+        textParticles.forEach(p => {
+            const tx = config.baseX + (p.ox * config.scale);
+            const ty = config.baseY + (p.oy * config.scale);
+            ctx.beginPath();
+            ctx.arc(tx, ty, config.pSize, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // C. 前景光环
+        ctx.shadowBlur = 0; 
+        drawOrbit(false); // Draw front
+        
+        ctx.globalCompositeOperation = 'source-over';
+        requestAnimationFrame(animate);
+    }
+
+    function drawOrbit(isBack) {
+        orbitParticles.forEach(p => {
+            // 速度控制
+            p.angle += config.orbitSpeed * p.speedBase;
+            
+            // 深度判断
+            const z = Math.sin(p.angle);
+            const drawCondition = isBack ? (z < 0) : (z >= 0);
+            
+            if(drawCondition) {
+                // 计算坐标：加入 Y 轴偏移
+                const x = config.baseX + Math.cos(p.angle) * p.r * (window.innerWidth/1600);
+                const y = (config.baseY + config.orbitY) + Math.sin(p.angle) * p.r * config.orbitTilt;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, p.size, 0, Math.PI*2);
+                
+                // 深度变暗
+                const alpha = p.alpha * (z > 0 ? 1 : 0.3);
+                ctx.fillStyle = config.color;
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        });
+    }
+
+    // --- 5. 交互绑定 ---
+    window.runGen = function() {
+        const input = document.getElementById('imageInput');
+        if(!input.files[0]) { setStatus("请选择文件", true); return; }
+        const file = input.files[0];
+        const r = new FileReader();
+        if(file.type.includes('svg')) {
+            r.readAsText(file);
+            r.onload = e => {
+                const url = URL.createObjectURL(new Blob([patchSVG(e.target.result)], {type:'image/svg+xml'}));
+                processSource(url);
+            };
+        } else {
+            r.readAsDataURL(file);
+            r.onload = e => processSource(e.target.result);
+        }
+    };
+
+    window.updateConfig = function(key, val) {
+        if(key === 'zoom') {
+            config.targetScale = val / 100;
+            document.getElementById('val-zoom').innerText = val + '%';
+            if(cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
+        } 
+        else if (key === 'speed') { config.orbitSpeed = val * 0.0005; }
+        else if (key === 'orbitY') { 
+            config.orbitY = parseInt(val); 
+            document.getElementById('val-ypos').innerText = val;
+        }
+        else if (key === 'color') { config.color = val; }
+        else if (key === 'glow') { config.glow = parseInt(val); }
+    };
+
+    window.addEventListener('keydown', e => {
+        if(e.key.toLowerCase() === 'h') document.getElementById('ui').classList.toggle('hidden');
+    });
+    
+    window.addEventListener('wheel', e => {
+        let currentScale = config.targetScale;
+        currentScale += e.deltaY * -0.0005;
+        currentScale = Math.min(Math.max(0.1, currentScale), 1.0);
+        config.targetScale = currentScale;
+        document.getElementById('val-zoom').innerText = Math.round(currentScale*100) + '%';
+        if(cachedWidth > 0) config.scale = (window.innerWidth * config.targetScale) / cachedWidth;
+    });
+
+    resize();
+    initOrbit();
+    animate();
+
+</script>
+</body>
+</html>
