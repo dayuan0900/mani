@@ -4,27 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Pure Land</title>
+    <title>Mani - Pure Transparent</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', monospace; user-select: none; }
         
-        /* UI 面板 */
         #ui {
             position: absolute; top: 20px; left: 20px; width: 280px;
-            background: rgba(12, 10, 8, 0.85); /* 暖金黑背景 */
+            background: rgba(10, 8, 5, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255,200,0,0.15);
             border-radius: 12px;
             padding: 20px; color: #fff; z-index: 100;
             box-shadow: 0 10px 50px rgba(0,0,0,0.9);
-            transition: opacity 0.5s, transform 0.5s; /* 平滑隐藏动画 */
-        }
-
-        /* 隐藏状态 */
-        .hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateX(-30px);
         }
 
         h3 { 
@@ -53,7 +44,7 @@
         input[type="file"] { width: 100%; font-size: 10px; color: #888; }
         input[type="color"] { width: 100%; border: none; height: 25px; background: none; cursor: pointer; padding: 0; }
 
-        .hint { font-size: 9px; color: #666; text-align: center; margin-top: 15px; border-top: 1px dashed #333; padding-top: 10px; }
+        .hint { font-size: 9px; color: #666; text-align: center; margin-top: 10px; }
         
         #loading {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -74,7 +65,7 @@
 </head>
 <body>
 
-<div id="loading">INITIALIZING PURE LAND...</div>
+<div id="loading">INITIALIZING SYSTEM...</div>
 
 <div id="ui">
     <h3>NIRVANA GALAXY</h3>
@@ -98,7 +89,6 @@
         <input type="range" id="textHeight" min="-5" max="10" value="2" step="0.5">
     </div>
 
-    <!-- 新增：文字颜色 -->
     <div class="control">
         <label>TEXT COLOR / 文字金漆</label>
         <input type="color" id="textColor" value="#ffd700">
@@ -116,7 +106,7 @@
         <input type="color" id="colorOutside" value="#1b3984">
     </div>
 
-    <div class="hint">按 <b>H</b> 键 隐藏/显示 界面<br>左键旋转 | 右键平移 | 滚轮缩放</div>
+    <div class="hint">按 <b>H</b> 键 隐藏/显示 界面</div>
 </div>
 
 <script type="module">
@@ -178,7 +168,7 @@
         randomnessPower: 3,
         insideColor: '#ff6030',
         outsideColor: '#1b3984',
-        textColor: '#ffd700' // 默认文字颜色：金
+        textColor: '#ffd700'
     };
 
     // --- 3. 星系生成 ---
@@ -233,7 +223,7 @@
         scene.add(galaxyPoints);
     }
 
-    // --- 4. 文字引擎 ---
+    // --- 4. 文字引擎 (修复背景块问题) ---
     function patchSVG(svg) {
         if (!svg.includes('width=') || !svg.includes('height=')) {
             return svg.replace('<svg', '<svg width="2000" height="2000" ');
@@ -242,7 +232,7 @@
     }
 
     function processSource(src) {
-        setStatus("读取图像中...");
+        setStatus("读取中...");
         const img = new Image();
         
         img.onload = () => {
@@ -252,6 +242,7 @@
             canvas2d.width = w; canvas2d.height = h;
             const ctx2d = canvas2d.getContext('2d');
             
+            // 铺灰底
             ctx2d.fillStyle = '#808080'; 
             ctx2d.fillRect(0,0,w,h);
             
@@ -266,8 +257,12 @@
             for(let y=0; y<h; y+=gap) {
                 for(let x=0; x<w; x+=gap) {
                     const i = (y*w+x)*4;
-                    // 灰度扫描
-                    if ((data[i] + data[i+1] + data[i+2])/3 > 50) {
+                    const lum = (data[i] + data[i+1] + data[i+2])/3;
+                    
+                    // 【核心修复】检测与背景灰色的差异 (差值法)
+                    // 128 是背景灰度。只有偏离灰色足够远（大于20）才被认为是文字
+                    // 这样就过滤掉了背景，只保留了黑/白文字
+                    if (Math.abs(lum - 128) > 20) {
                         points.push({
                             x: (x / w - 0.5) * 20, 
                             y: -(y / h - 0.5) * 20 * (h/w), 
@@ -276,9 +271,10 @@
                     }
                 }
             }
+            
             if(points.length === 0) setStatus("无内容", true);
             else {
-                setStatus("生成成功");
+                setStatus("成功");
                 createTextParticles(points);
             }
         };
@@ -305,14 +301,13 @@
         textGeometry = new THREE.BufferGeometry();
         textGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-        // 材质：使用统一颜色 (方便动态修改)
         textMaterial = new THREE.PointsMaterial({
             size: 0.08, 
-            color: new THREE.Color(parameters.textColor), // 使用配置颜色
+            color: new THREE.Color(parameters.textColor),
             sizeAttenuation: true,
             depthWrite: false,
             blending: THREE.AdditiveBlending,
-            vertexColors: false // 关闭顶点颜色，使用全局颜色
+            vertexColors: false 
         });
 
         textPoints = new THREE.Points(textGeometry, textMaterial);
@@ -349,7 +344,6 @@
     }
     tick();
 
-    // 监听器
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -357,7 +351,7 @@
         composer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // 键盘隐藏UI
+    // H键隐藏
     window.addEventListener('keydown', (e) => {
         if(e.key.toLowerCase() === 'h') {
             document.getElementById('ui').classList.toggle('hidden');
@@ -381,19 +375,15 @@
         }
     });
 
-    // 实时更新颜色
     const updateGalaxy = () => {
         parameters.insideColor = document.getElementById('colorInside').value;
         parameters.outsideColor = document.getElementById('colorOutside').value;
         generateGalaxy();
     };
     
-    // 更新文字颜色
     document.getElementById('textColor').addEventListener('input', (e) => {
         parameters.textColor = e.target.value;
-        if(textMaterial) {
-            textMaterial.color.set(parameters.textColor);
-        }
+        if(textMaterial) textMaterial.color.set(parameters.textColor);
     });
 
     document.getElementById('colorInside').addEventListener('input', updateGalaxy);
