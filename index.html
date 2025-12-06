@@ -3,33 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 安全策略，防止云端拦截 -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
-    <title>Mani - Universal Liquid</title>
+    <title>Mani - Galaxy Silk</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
-        
+        body { 
+            margin: 0; overflow: hidden; background: #000; 
+            font-family: 'Segoe UI', sans-serif; user-select: none; 
+        }
+
+        /* 界面 UI - 半透明磨砂 */
         #ui {
             position: absolute; top: 20px; left: 20px; width: 260px;
-            background: rgba(15, 20, 25, 0.9);
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+            background: rgba(10, 15, 20, 0.65);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
             padding: 20px; color: #fff; z-index: 100;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            transition: opacity 0.5s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
+        #ui:hover { opacity: 1; background: rgba(10, 15, 20, 0.85); }
+        #ui { opacity: 0.7; }
 
-        h3 { margin: 0 0 15px 0; color: #00e5ff; letter-spacing: 2px; text-align: center; }
+        h3 { 
+            margin: 0 0 15px 0; color: #fff; font-size: 14px; 
+            letter-spacing: 4px; text-align: center; text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
+        }
 
         .btn {
-            width: 100%; padding: 12px; border: none; border-radius: 6px;
+            width: 100%; padding: 10px; border: none; border-radius: 4px;
             background: linear-gradient(135deg, #00c6ff, #0072ff);
-            color: #fff; font-weight: bold; cursor: pointer;
-            margin-top: 10px; transition: 0.2s;
+            color: white; font-weight: bold; cursor: pointer;
+            margin-top: 8px; font-size: 12px; letter-spacing: 1px;
+            transition: 0.2s;
         }
-        .btn:hover { box-shadow: 0 0 20px rgba(0, 198, 255, 0.5); }
+        .btn:hover { box-shadow: 0 0 15px rgba(0,198,255,0.4); transform: scale(1.02); }
 
-        label { display: block; font-size: 11px; color: #88a; margin-top: 12px; margin-bottom: 4px; }
-        input[type="file"] { width: 100%; font-size: 11px; color: #ccc; }
-        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; }
-        input[type="color"] { width: 100%; height: 25px; border: none; background: none; }
+        label { display: block; font-size: 10px; color: #88a; margin-top: 12px; margin-bottom: 4px; }
+        input[type="file"] { width: 100%; font-size: 10px; color: #ccc; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #00e5ff; height: 3px; }
+        input[type="color"] { width: 100%; border: none; height: 25px; padding: 0; background: none; }
 
         canvas { display: block; }
     </style>
@@ -37,20 +52,21 @@
 <body>
 
 <div id="ui">
-    <h3>LIQUID NEON</h3>
+    <h3>GALAXY SILK</h3>
     
     <input type="file" id="imageInput" accept="image/*,.svg">
     <button class="btn" onclick="runGen()">ACTIVATE / 激活</button>
     
-    <div style="margin-top:15px; border-top:1px solid #333;"></div>
+    <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1);"></div>
 
-    <label>DENSITY / 连贯密度 (最右最连贯)</label>
-    <input type="range" id="densityRange" min="1" max="3" step="1" value="3" oninput="updateDensity(this.value)">
+    <!-- 默认值调低，解决文字太粗问题 -->
+    <label>PARTICLE SIZE / 粒子细度 (调小变细)</label>
+    <input type="range" id="sizeRange" min="0.5" max="3" step="0.1" value="0.9" oninput="config.pSize=parseFloat(this.value)">
 
-    <label>PARTICLE SIZE / 粒子粗细</label>
-    <input type="range" id="sizeRange" min="1" max="4" step="0.1" value="1.5" oninput="config.pSize=parseFloat(this.value)">
+    <label>FLOW SPEED / 飘动速度</label>
+    <input type="range" id="waveRange" min="0" max="50" value="15" oninput="config.waveSpeed=this.value*0.0001">
 
-    <label>COLOR / 颜色</label>
+    <label>COLOR / 光色</label>
     <input type="color" id="colorPicker" value="#00e5ff" oninput="config.color=this.value">
 </div>
 
@@ -61,17 +77,15 @@
     const ctx = canvas.getContext('2d');
     
     let particles = [];
-    let bgParticles = [];
-    let currentImgData = null; 
-    let currentImgWidth = 0; 
-    let currentImgHeight = 0;
-
+    let bgDust = [];
+    
+    // 配置：默认粒子极细 (0.9)
     let config = {
         baseX: 0, baseY: 0, scale: 1,
         color: '#00e5ff',
-        pSize: 1.5,
-        waveAmp: 5,
-        waveSpeed: 0.002
+        pSize: 0.9, 
+        waveAmp: 6,
+        waveSpeed: 0.0015
     };
 
     function resize() {
@@ -83,27 +97,31 @@
     }
     window.addEventListener('resize', resize);
 
-    // --- 1. 背景星尘 ---
+    // --- 1. 银河背景系统 (800+ 粒子) ---
     function initBg() {
-        bgParticles = [];
-        for(let i=0; i<250; i++) {
-            bgParticles.push({
+        bgDust = [];
+        const count = 800; // 增加到 800 个粒子
+        for(let i=0; i<count; i++) {
+            bgDust.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 2,
-                alpha: Math.random() * 0.5 + 0.1,
-                vx: (Math.random()-0.5) * 0.2,
-                vy: (Math.random()-0.5) * 0.2
+                // 大小随机，制造景深感
+                size: Math.random() < 0.9 ? Math.random() * 1.5 : Math.random() * 3, 
+                // 初始相位，用于呼吸闪烁
+                phase: Math.random() * Math.PI * 2, 
+                // 速度极慢，像在液体中
+                vx: (Math.random() - 0.5) * 0.2, 
+                vy: (Math.random() - 0.5) * 0.2,
+                alphaBase: Math.random() * 0.4 + 0.1
             });
         }
     }
 
-    // --- 2. 图像处理 (灰色扫描法) ---
+    // --- 2. 图像处理 (高分辨率+灰度识别) ---
     
-    // 强制给SVG加尺寸，防止0x0错误
     function patchSVG(svg) {
         if (!svg.includes('width=') || !svg.includes('height=')) {
-            return svg.replace('<svg', '<svg width="1000" height="1000" ');
+            return svg.replace('<svg', '<svg width="2000" height="2000" ');
         }
         return svg;
     }
@@ -112,69 +130,57 @@
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = () => {
-            const w = 1000; const h = 800; // 强制大尺寸采样
+            // 【关键升级】使用 2000px 宽度采样，解决“粗糙”问题
+            const w = 2000; 
+            const h = 1500;
             const off = document.createElement('canvas');
             off.width = w; off.height = h;
             const offCtx = off.getContext('2d');
             
-            // 【关键修改】背景涂成中性灰 #808080 (RGB: 128,128,128)
-            // 这样无论是白字还是黑字，都有对比度
-            offCtx.fillStyle = '#808080'; 
+            // 铺灰底 (兼容所有颜色)
+            offCtx.fillStyle = '#808080';
             offCtx.fillRect(0,0,w,h);
             
             const aspect = img.width/img.height||1;
             let dw=w, dh=w/aspect;
             if(dh>h){ dh=h; dw=h*aspect; }
-            // 居中绘制
             offCtx.drawImage(img, (w-dw)/2, (h-dh)/2, dw, dh);
             
-            currentImgData = offCtx.getImageData(0,0,w,h).data;
-            currentImgWidth = w;
-            currentImgHeight = h;
+            const data = offCtx.getImageData(0,0,w,h).data;
+            particles = [];
             
-            generateParticles();
-        };
-        img.onerror = () => alert("图片加载失败，请检查文件格式");
-        img.src = src;
-    }
+            // 采样步长：因为画布大了，步长设为 4 依然很清晰
+            const gap = 4; 
 
-    function generateParticles() {
-        if (!currentImgData) return;
-        
-        particles = [];
-        const w = currentImgWidth;
-        const h = currentImgHeight;
-        const gap = 4 - parseInt(document.getElementById('densityRange').value); 
-
-        for(let y=0; y<h; y+=gap) {
-            for(let x=0; x<w; x+=gap) {
-                const i = (y*w+x)*4;
-                const r = currentImgData[i];
-                const g = currentImgData[i+1];
-                const b = currentImgData[i+2];
-                
-                const lum = (r + g + b) / 3;
-                
-                // 【核心逻辑】只要亮度不是 128 (灰色背景)，就说明这里有内容
-                // 阈值设为 20，容错率高
-                if (Math.abs(lum - 128) > 20) {
-                    particles.push({
-                        x: Math.random()*canvas.width,
-                        y: Math.random()*canvas.height,
-                        ox: (x - w/2) + (Math.random()-0.5), // 随机填缝
-                        oy: (y - h/2) + (Math.random()-0.5),
-                        vx: 0, vy: 0,
-                        offset: Math.random()*100
-                    });
+            for(let y=0; y<h; y+=gap) {
+                for(let x=0; x<w; x+=gap) {
+                    const i = (y*w+x)*4;
+                    const lum = (data[i]+data[i+1]+data[i+2])/3;
+                    
+                    // 灰度差检测
+                    if(Math.abs(lum - 128) > 20) {
+                        particles.push({
+                            x: Math.random()*canvas.width,
+                            y: Math.random()*canvas.height,
+                            // 计算坐标
+                            ox: (x - w/2), 
+                            oy: (y - h/2),
+                            vx: 0, vy: 0,
+                            // 随机相位，让文字内部也会像水波一样微动
+                            offset: (x * 0.02 + y * 0.02)
+                        });
+                    }
                 }
             }
-        }
-        
-        if(particles.length > 0) {
-            config.scale = (window.innerWidth * 0.75) / w; 
-        } else {
-            alert("未检测到轮廓！请尝试换一张图片，或把SVG转成PNG上传。");
-        }
+            
+            if(particles.length > 0) {
+                // 根据屏幕适配缩放
+                config.scale = (window.innerWidth * 0.75) / w; 
+            } else {
+                alert("未检测到内容，请检查图片！");
+            }
+        };
+        img.src = src;
     }
 
     // --- 3. 交互 ---
@@ -197,47 +203,57 @@
         }
     };
 
-    window.updateDensity = function() { generateParticles(); };
-
     // --- 4. 渲染循环 ---
     function animate() {
+        // 拖尾清除 (制造流动感)
         ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'; 
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const time = Date.now();
+        const time = Date.now() * 0.001; // 时间系数
 
-        // 绘制星尘
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        bgParticles.forEach(p => {
-            p.x += p.vx; p.y += p.vy;
+        // A. 绘制背景星海 (Graceful Particles)
+        ctx.globalCompositeOperation = 'lighter';
+        bgDust.forEach(p => {
+            // 优美的流动算法：正弦波叠加
+            p.x += Math.cos(time * 0.5 + p.y * 0.005) * 0.2;
+            p.y += Math.sin(time * 0.3 + p.x * 0.005) * 0.2;
+
+            // 边界循环
             if(p.x<0) p.x=canvas.width; if(p.x>canvas.width) p.x=0;
             if(p.y<0) p.y=canvas.height; if(p.y>canvas.height) p.y=0;
+
+            // 呼吸闪烁
+            const alpha = p.alphaBase + Math.sin(time + p.phase) * 0.1;
+            
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            // 淡淡的青蓝色背景，非常高级
+            ctx.fillStyle = `rgba(100, 220, 255, ${alpha})`; 
             ctx.fill();
         });
 
-        // 绘制文字 (Lighter 融合模式)
-        ctx.globalCompositeOperation = 'lighter';
+        // B. 绘制文字 (高精度)
         ctx.fillStyle = config.color;
-        
-        // 开启光晕胶水
-        ctx.shadowBlur = 10;
+        // 光晕稍微收敛一点，防止变粗
+        ctx.shadowBlur = 8;
         ctx.shadowColor = config.color;
 
         particles.forEach(p => {
-            const wx = Math.sin(time * config.waveSpeed + p.offset) * config.waveAmp;
-            const wy = Math.cos(time * config.waveSpeed + p.offset) * config.waveAmp;
+            // 波浪飘动
+            const wx = Math.sin(time + p.offset) * config.waveAmp;
+            const wy = Math.cos(time * 1.2 + p.offset) * config.waveAmp;
             
             const tx = config.baseX + (p.ox * config.scale) + wx;
             const ty = config.baseY + (p.oy * config.scale) + wy;
             
+            // 弹性跟随
             p.vx += (tx - p.x) * 0.1;
             p.vy += (ty - p.y) * 0.1;
             p.x += p.vx; p.y += p.vy;
             p.vx *= 0.85; p.vy *= 0.85;
 
             ctx.beginPath();
+            // 粒子大小由滑块控制，默认很细 (0.9)
             ctx.arc(p.x, p.y, config.pSize, 0, Math.PI*2);
             ctx.fill();
         });
